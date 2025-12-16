@@ -1,10 +1,8 @@
-app = Dash(__name__)
-server = app.server
 
-# ----------------------------------------
 # 1. IMPORTS
 # ----------------------------------------
 
+# Corrigindo a importação de Dash
 from dash import Dash, html, dcc, Input, Output, State, dash_table
 import plotly.express as px
 import pandas as pd
@@ -23,10 +21,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
 
-
-# ----------------------------------------
-# 2. CARREGAMENTO E PREPARAÇÃO DOS DADOS
-# ----------------------------------------
+# Inicialização do aplicativo Dash
+app = Dash(__name__)
+server = app.server  # Usado para quando for executar em servidores WSGI
 
 URL = "https://docs.google.com/spreadsheets/d/1QJFSLpVO0bI-bsNdgiTWl8rOh1_h6_B7Q8F_SW66_yc/gviz/tq?tqx=out:csv&sheet=Passagens%20-%20DCF"
 
