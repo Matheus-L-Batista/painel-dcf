@@ -1,15 +1,13 @@
-# 1. IMPORTS
-# ----------------------------------------
+# pages/passagens_dcf.py
+# Painel: Gastos com Viagens (Passagens DCF)
 
-from dash import Dash, html, dcc, Input, Output, State, dash_table
+import dash
+from dash import html, dcc, Input, Output, State, dash_table
 import plotly.express as px
 import pandas as pd
 from datetime import datetime
 from io import BytesIO
-import base64
-import plotly.io as pio
 
-# PDF
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.platypus import (
@@ -19,25 +17,30 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
 
-# Inicialização do aplicativo Dash
-app = Dash(__name__)
-server = app.server  # Usado para quando for executar em servidores WSGI
+# --------------------------------------------------
+# Registro da página
+# --------------------------------------------------
+dash.register_page(
+    __name__,
+    path="/passagens-dcf",
+    name="Passagens DCF",
+    title="Gastos com Viagens",
+)
 
-URL = "https://docs.google.com/spreadsheets/d/1QJFSLpVO0bI-bsNdgiTWl8rOh1_h6_B7Q8F_SW66_yc/gviz/tq?tqx=out:csv&sheet=Passagens%20-%20DCF"
-
+URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1QJFSLpVO0bI-bsNdgiTWl8rOh1_h6_B7Q8F_SW66_yc/"
+    "gviz/tq?tqx=out:csv&sheet=Passagens%20-%20DCF"
+)
 
 def carregar_dados():
     df = pd.read_csv(URL)
-
-    # Padroniza nomes das colunas
     df.columns = [c.strip() for c in df.columns]
 
-    # Converte datas
     df["Data Início da Viagem"] = pd.to_datetime(
         df["Data Início da Viagem"], format="%d/%m/%Y", errors="coerce"
     )
 
-    # Converte valores monetários
     def conv_moeda(valor):
         if isinstance(valor, str):
             v = (
@@ -58,214 +61,209 @@ def carregar_dados():
         "Custo com emissão de passagens dentro do prazo",
         "Custo com emissão de passagens em caráter de urgência",
     ]
-
     for col in col_moeda:
         df[col] = df[col].apply(conv_moeda)
 
-    # Cria colunas de ano / mês
     df["Ano"] = df["Data Início da Viagem"].dt.year
     df["Mes"] = df["Data Início da Viagem"].dt.month
 
     return df
 
-
 df = carregar_dados()
-
-# ----------------------------------------
-# 3. APLICATIVO DASH
-# ----------------------------------------
+ANO_PADRAO = int(sorted(df["Ano"].dropna().unique())[-1])
 
 nomes_meses = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
 ]
 
-# ----------------------------------------
-# 4. LAYOUT
-# ----------------------------------------
+dropdown_style = {
+    "color": "black",
+    "width": "100%",
+    "marginBottom": "10px",
+    "whiteSpace": "normal",
+}
 
-app.layout = html.Div(
-    className="app-root",
+# ----------------------------------------
+# Layout (conteúdo da página)
+# ----------------------------------------
+layout = html.Div(
     children=[
+        html.H2(
+            "Gastos com Viagens",
+            style={"textAlign": "center"},
+        ),
+
         html.Div(
-            className="app-container",
+            style={"marginBottom": "20px"},
             children=[
-                # -------- COLUNA ESQUERDA — FIXA --------
+                html.H3("Filtros", className="sidebar-title"),
                 html.Div(
-                    className="sidebar",
+                    style={"display": "flex", "flexWrap": "wrap", "gap": "10px"},
                     children=[
                         html.Div(
-                            className="sidebar-logo-wrapper",
-                            children=html.Img(
-                                src="/assets/logo_unifei.png",
-                                className="sidebar-logo",
-                            ),
-                        ),
-
-                        html.H3("Ano", className="sidebar-title"),
-                        dcc.Dropdown(
-                            id="filtro_ano",
-                            options=[{"label": int(a), "value": int(a)}
-                                     for a in sorted(df["Ano"].dropna().unique())],
-                            value=2025,
-                            clearable=False,
-                            style={"color": "black", "width": "100%"},
-                            optionHeight=40,
-                            maxHeight=400,
-                        ),
-
-                        html.H3("Mês", className="sidebar-title"),
-                        dcc.Dropdown(
-                            id="filtro_mes",
-                            options=[{"label": m.capitalize(), "value": i}
-                                     for i, m in enumerate(nomes_meses, start=1)],
-                            value=None,
-                            placeholder="Todos",
-                            clearable=True,
-                            style={"color": "black", "width": "100%"},
-                            optionHeight=40,
-                            maxHeight=400,
-                        ),
-
-                        html.H3("Unidade (Viagem)", className="sidebar-title"),
-                        dcc.Dropdown(
-                            id="filtro_unidade",
-                            options=[{"label": u, "value": u}
-                                     for u in sorted(df["Unidade (Viagem)"].unique())],
-                            value=None,
-                            placeholder="Todas",
-                            clearable=True,
-                            style={"color": "black", "width": "100%"},
-                            optionHeight=50,
-                            maxHeight=400,
-                        ),
-
-                        html.Div(
-                            className="sidebar-buttons",
+                            style={"minWidth": "140px", "flex": "0 0 160px"},
                             children=[
-                                html.Button(
-                                    "Limpar filtros",
-                                    id="btn_limpar_filtros",
-                                    n_clicks=0,
-                                    className="sidebar-button",
+                                html.Label("Ano"),
+                                dcc.Dropdown(
+                                    id="filtro_ano_passagens",
+                                    options=[
+                                        {"label": int(a), "value": int(a)}
+                                        for a in sorted(df["Ano"].dropna().unique())
+                                    ],
+                                    value=ANO_PADRAO,
+                                    clearable=False,
+                                    style=dropdown_style,
+                                    optionHeight=40,
+                                    maxHeight=400,
                                 ),
-                                html.Button(
-                                    "Baixar Relatório PDF",
-                                    id="btn_download_relatorio",
-                                    n_clicks=0,
-                                    className="sidebar-button",
+                            ],
+                        ),
+                        html.Div(
+                            style={"minWidth": "140px", "flex": "0 0 160px"},
+                            children=[
+                                html.Label("Mês"),
+                                dcc.Dropdown(
+                                    id="filtro_mes_passagens",
+                                    options=[
+                                        {"label": m.capitalize(), "value": i}
+                                        for i, m in enumerate(nomes_meses, start=1)
+                                    ],
+                                    value=None,
+                                    placeholder="Todos",
+                                    clearable=True,
+                                    style=dropdown_style,
+                                    optionHeight=40,
+                                    maxHeight=400,
                                 ),
-                                dcc.Download(id="download_relatorio"),
+                            ],
+                        ),
+                        html.Div(
+                            style={"minWidth": "240px", "flex": "1"},
+                            children=[
+                                html.Label("Unidade (Viagem)"),
+                                dcc.Dropdown(
+                                    id="filtro_unidade_passagens",
+                                    options=[
+                                        {"label": u, "value": u}
+                                        for u in sorted(df["Unidade (Viagem)"].unique())
+                                    ],
+                                    value=None,
+                                    placeholder="Todas",
+                                    clearable=True,
+                                    style=dropdown_style,
+                                    optionHeight=50,
+                                    maxHeight=400,
+                                ),
                             ],
                         ),
                     ],
                 ),
-
-                # -------- COLUNA DIREITA --------
                 html.Div(
-                    className="main-content",
+                    style={"marginTop": "10px"},
                     children=[
-                        html.H2(
-                            "Gastos com Viagens",
-                            style={"textAlign": "center"},
+                        html.Button(
+                            "Limpar filtros",
+                            id="btn_limpar_filtros_passagens",
+                            n_clicks=0,
+                            className="sidebar-button",
                         ),
-
-                        # ----- CARDS -----
-                        html.Div(
-                            id="cards_container",
-                            className="cards-container",
+                        html.Button(
+                            "Baixar Relatório PDF",
+                            id="btn_download_relatorio_passagens",
+                            n_clicks=0,
+                            className="sidebar-button",
+                            style={"marginLeft": "10px"},
                         ),
-
-                        # ----- GRÁFICOS LADO A LADO -----
-                        html.Div(
-                            className="charts-row",
-                            children=[
-                                dcc.Graph(id="grafico_pizza", style={"width": "50%"}),
-                                dcc.Graph(id="grafico_barras", style={"width": "50%"}),
-                            ],
-                        ),
-
-                        # ----- RESUMO POR UNIDADE -----
-                        html.H4("Resumo por Unidade"),
-                        dash_table.DataTable(
-                            id="tabela_unidades",
-                            row_selectable=False,
-                            cell_selectable=False,
-                            active_cell=None,
-                            selected_cells=[],
-                            selected_rows=[],
-                            columns=[
-                                {"name": "Unidade (Viagem)", "id": "Unidade (Viagem)"},
-                                {"name": "Gasto com Diárias", "id": "Valor das Diárias"},
-                                {"name": "Gasto com Passagem", "id": "Valor da Passagem"},
-                                {"name": "Gasto com Restituição", "id": "Valor Restituição"},
-                                {"name": "Gasto com Seguro Viagem", "id": "Valor Seguro Viagem"},
-                            ],
-                            data=[],
-                            style_table={"overflowX": "auto"},
-                            style_cell={"textAlign": "center", "padding": "4px"},
-                            style_header={
-                                "fontWeight": "bold",
-                                "backgroundColor": "#f0f0f0",
-                            },
-                        ),
-
-                        # ----- DETALHAMENTO PCDP -----
-                        html.H4("Detalhamento por Unidade e PCDP"),
-                        dash_table.DataTable(
-                            id="tabela_detalhe",
-                            row_selectable=False,
-                            cell_selectable=False,
-                            active_cell=None,
-                            selected_cells=[],
-                            selected_rows=[],
-                            columns=[
-                                {"name": "Unidade (Viagem)", "id": "Unidade (Viagem)"},
-                                {"name": "Número da PCDP", "id": "Número da PCDP"},
-                                {"name": "Data Início da Viagem", "id": "Data Início da Viagem"},
-                                {
-                                    "name": "Custo passagens no prazo",
-                                    "id": "Custo com emissão de passagens dentro do prazo",
-                                },
-                                {
-                                    "name": "Custo passagens urgência",
-                                    "id": "Custo com emissão de passagens em caráter de urgência",
-                                },
-                            ],
-                            data=[],
-                            style_table={"overflowX": "auto"},
-                            style_cell={"textAlign": "center", "padding": "4px"},
-                            style_header={
-                                "fontWeight": "bold",
-                                "backgroundColor": "#f0f0f0",
-                            },
-                        ),
+                        dcc.Download(id="download_relatorio_passagens"),
                     ],
                 ),
             ],
         ),
-        dcc.Store(id="store_graficos"),
+
+        html.Div(
+            id="cards_container_passagens",
+            className="cards-container",
+        ),
+
+        html.Div(
+            className="charts-row",
+            children=[
+                dcc.Graph(id="grafico_pizza_passagens", style={"width": "50%"}),
+                dcc.Graph(id="grafico_barras_passagens", style={"width": "50%"}),
+            ],
+        ),
+
+        html.H4("Resumo por Unidade"),
+        dash_table.DataTable(
+            id="tabela_unidades_passagens",
+            row_selectable=False,
+            cell_selectable=False,
+            active_cell=None,
+            selected_cells=[],
+            selected_rows=[],
+            columns=[
+                {"name": "Unidade (Viagem)", "id": "Unidade (Viagem)"},
+                {"name": "Gasto com Diárias", "id": "Valor das Diárias"},
+                {"name": "Gasto com Passagem", "id": "Valor da Passagem"},
+                {"name": "Gasto com Restituição", "id": "Valor Restituição"},
+                {"name": "Gasto com Seguro Viagem", "id": "Valor Seguro Viagem"},
+            ],
+            data=[],
+            style_table={"overflowX": "auto"},
+            style_cell={"textAlign": "center", "padding": "4px"},
+            style_header={
+                "fontWeight": "bold",
+                "backgroundColor": "#f0f0f0",
+            },
+        ),
+
+        html.H4("Detalhamento por Unidade e PCDP"),
+        dash_table.DataTable(
+            id="tabela_detalhe_passagens",
+            row_selectable=False,
+            cell_selectable=False,
+            active_cell=None,
+            selected_cells=[],
+            selected_rows=[],
+            columns=[
+                {"name": "Unidade (Viagem)", "id": "Unidade (Viagem)"},
+                {"name": "Número da PCDP", "id": "Número da PCDP"},
+                {"name": "Data Início da Viagem", "id": "Data Início da Viagem"},
+                {
+                    "name": "Custo passagens no prazo",
+                    "id": "Custo com emissão de passagens dentro do prazo",
+                },
+                {
+                    "name": "Custo passagens urgência",
+                    "id": "Custo com emissão de passagens em caráter de urgência",
+                },
+            ],
+            data=[],
+            style_table={"overflowX": "auto"},
+            style_cell={"textAlign": "center", "padding": "4px"},
+            style_header={
+                "fontWeight": "bold",
+                "backgroundColor": "#f0f0f0",
+            },
+        ),
+
+        dcc.Store(id="store_graficos_passagens"),
     ],
 )
 
 # ----------------------------------------
 # 5. CALLBACK — Atualização geral
 # ----------------------------------------
-
-
-@app.callback(
-    [
-        Output("cards_container", "children"),
-        Output("grafico_pizza", "figure"),
-        Output("grafico_barras", "figure"),
-        Output("tabela_unidades", "data"),
-        Output("store_graficos", "data"),
-    ],
-    [
-        Input("filtro_ano", "value"),
-        Input("filtro_mes", "value"),
-        Input("filtro_unidade", "value"),
-    ],
+@dash.callback(
+    Output("cards_container_passagens", "children"),
+    Output("grafico_pizza_passagens", "figure"),
+    Output("grafico_barras_passagens", "figure"),
+    Output("tabela_unidades_passagens", "data"),
+    Output("store_graficos_passagens", "data"),
+    Input("filtro_ano_passagens", "value"),
+    Input("filtro_mes_passagens", "value"),
+    Input("filtro_unidade_passagens", "value"),
 )
 def atualizar_pagina(ano, mes, unidade):
     dff = df.copy()
@@ -292,14 +290,8 @@ def atualizar_pagina(ano, mes, unidade):
         return html.Div(
             className="card",
             children=[
-                html.Div(
-                    titulo,
-                    className="card-title",
-                ),
-                html.Div(
-                    f(valor),
-                    className="card-value",
-                ),
+                html.Div(titulo, className="card-title"),
+                html.Div(f(valor), className="card-value"),
             ],
         )
 
@@ -312,11 +304,9 @@ def atualizar_pagina(ano, mes, unidade):
         card("Restituições", total_restit),
     ]
 
-    # --- Pizza ---
     pizza_df = pd.DataFrame(
         {"Tipo": ["No prazo", "Urgência"], "Valor": [total_prazo, total_urgencia]}
     )
-
     fig_pizza = px.pie(
         pizza_df,
         names="Tipo",
@@ -333,7 +323,6 @@ def atualizar_pagina(ano, mes, unidade):
         textposition="inside",
     )
 
-    # --- Barras ---
     barras_df = pd.DataFrame(
         {"Categoria": ["Diárias", "Passagens"], "Valor": [total_diarias, total_passagem]}
     )
@@ -355,7 +344,6 @@ def atualizar_pagina(ano, mes, unidade):
         title_x=0.5, showlegend=False, yaxis_tickprefix="R$ ", yaxis_tickformat=",.2f"
     )
 
-    # --- Resumo unidade ---
     resumo = (
         dff.groupby("Unidade (Viagem)", as_index=False)[
             [
@@ -391,19 +379,14 @@ def atualizar_pagina(ano, mes, unidade):
 
     return cards, fig_pizza, fig_barras, resumo.to_dict("records"), dados_pdf
 
-
 # ----------------------------------------
 # 6. CALLBACK — Tabela de Detalhamento
 # ----------------------------------------
-
-
-@app.callback(
-    Output("tabela_detalhe", "data"),
-    [
-        Input("filtro_ano", "value"),
-        Input("filtro_mes", "value"),
-        Input("filtro_unidade", "value"),
-    ],
+@dash.callback(
+    Output("tabela_detalhe_passagens", "data"),
+    Input("filtro_ano_passagens", "value"),
+    Input("filtro_mes_passagens", "value"),
+    Input("filtro_unidade_passagens", "value"),
 )
 def atualizar_detalhe(ano, mes, unidade):
     dff = df.copy()
@@ -440,29 +423,22 @@ def atualizar_detalhe(ano, mes, unidade):
 
     return dff.to_dict("records")
 
-
 # ----------------------------------------
 # 7. CALLBACK — Limpar filtros
 # ----------------------------------------
-
-
-@app.callback(
-    [
-        Output("filtro_ano", "value"),
-        Output("filtro_mes", "value"),
-        Output("filtro_unidade", "value"),
-    ],
-    Input("btn_limpar_filtros", "n_clicks"),
+@dash.callback(
+    Output("filtro_ano_passagens", "value"),
+    Output("filtro_mes_passagens", "value"),
+    Output("filtro_unidade_passagens", "value"),
+    Input("btn_limpar_filtros_passagens", "n_clicks"),
     prevent_initial_call=True,
 )
 def limpar(n):
-    return 2025, None, None
-
+    return ANO_PADRAO, None, None
 
 # ----------------------------------------
 # 8. CALLBACK — Geração do PDF (sem gráficos, com cards)
 # ----------------------------------------
-
 wrap_style = ParagraphStyle(
     name="wrap",
     fontSize=8,
@@ -470,21 +446,17 @@ wrap_style = ParagraphStyle(
     spaceAfter=4,
 )
 
-
 def wrap(text):
     return Paragraph(str(text), wrap_style)
 
-
-@app.callback(
-    Output("download_relatorio", "data"),
-    Input("btn_download_relatorio", "n_clicks"),
-    [
-        State("grafico_pizza", "figure"),
-        State("grafico_barras", "figure"),
-        State("tabela_unidades", "data"),
-        State("tabela_detalhe", "data"),
-        State("store_graficos", "data"),
-    ],
+@dash.callback(
+    Output("download_relatorio_passagens", "data"),
+    Input("btn_download_relatorio_passagens", "n_clicks"),
+    State("grafico_pizza_passagens", "figure"),
+    State("grafico_barras_passagens", "figure"),
+    State("tabela_unidades_passagens", "data"),
+    State("tabela_detalhe_passagens", "data"),
+    State("store_graficos_passagens", "data"),
     prevent_initial_call=True,
 )
 def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
@@ -497,7 +469,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     styles = getSampleStyleSheet()
     story = []
 
-    # Título
     titulo = Paragraph(
         "<b>Relatório de Gastos com Viagens</b>",
         ParagraphStyle(
@@ -507,7 +478,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     story.append(titulo)
     story.append(Spacer(1, 0.3 * inch))
 
-    # Filtros aplicados
     filtros = dados_pdf["filtros"]
     story.append(
         Paragraph(
@@ -519,7 +489,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     )
     story.append(Spacer(1, 0.3 * inch))
 
-    # --- CARDS NO PDF (sem gráficos) ---
     cards_vals = dados_pdf["cards"]
 
     def fmt(v):
@@ -549,7 +518,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     story.append(tbl_cards)
     story.append(Spacer(1, 0.4 * inch))
 
-    # Resumo por unidade
     story.append(Paragraph("<b>Resumo por Unidade</b>", styles["Heading2"]))
 
     table1 = [["Unidade", "Diárias", "Passagem", "Restituição", "Seguro"]]
@@ -582,7 +550,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     story.append(tbl1)
     story.append(Spacer(1, 0.5 * inch))
 
-    # Detalhamento
     story.append(Paragraph("<b>Detalhamento PCDP</b>", styles["Heading2"]))
 
     table2 = [["Unidade", "PCDP", "Data", "Prazo", "Urgência"]]
@@ -615,17 +582,7 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     )
     story.append(tbl2)
 
-    # Finaliza PDF
     doc.build(story)
     buffer.seek(0)
-
+    from dash import dcc
     return dcc.send_bytes(buffer.getvalue(), "relatorio_gastos_viagens.pdf")
-
-
-# ----------------------------------------
-# 9. Rodar App
-# ----------------------------------------
-import os
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))
