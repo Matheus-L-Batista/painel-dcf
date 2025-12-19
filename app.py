@@ -4,73 +4,73 @@ from dash import Dash, html, dcc
 app = Dash(__name__, use_pages=True)
 server = app.server
 
+# Itens do menu (links para as páginas da pasta pages/)
+menu_links = [
+    {"label": "Passagens DCF", "href": "/passagens-dcf"},
+    {"label": "Pagamentos Efetivados", "href": "/pagamentos"},
+    {"label": "Dotação Atualizada", "href": "/dotacao"},
+    {"label": "Execução Orçamento UNIFEI", "href": "/execucao-orcamento-unifei"},
+    {"label": "Naturezas Despesa", "href": "/natureza-despesa-2024"},
+    {"label": "Execução TED", "href": "/execucao-ted"},
+]
+
 app.layout = html.Div(
     className="app-root",
     children=[
+        # Localização da URL para saber qual item está ativo
+        dcc.Location(id="url"),
         html.Div(
             className="app-container",
             children=[
+                # SIDEBAR
                 html.Div(
                     className="sidebar",
                     children=[
-                        html.Img(
-                            src="/assets/logo_unifei.png",
-                            className="sidebar-logo"
+                        html.Div(
+                            className="sidebar-header",
+                            children=[
+                                html.Img(
+                                    src="/assets/logo_unifei.png",
+                                    className="sidebar-logo",
+                                ),
+                                html.H2("Painéis", className="sidebar-title"),
+                            ],
                         ),
-
-                        html.H2("Painéis", style={"color": "white"}),
-
-                        dcc.Link(
-                            "Passagens DCF",
-                            href="/passagens-dcf",
-                            refresh=True
-                        ),
-                        html.Br(),
-
-                        dcc.Link(
-                            "Pagamentos Efetivados",
-                            href="/pagamentos",
-                            refresh=True
-                        ),
-                        html.Br(),
-
-                        dcc.Link(
-                            "Dotação Atualizada",
-                            href="/dotacao",
-                            refresh=True
-                        ),
-                        html.Br(),
-
-                        dcc.Link(
-                            "Execução Orçamento UNIFEI",
-                            href="/execucao-orcamento-unifei",
-                            refresh=True
-                        ),
-                        html.Br(),
-
-                        dcc.Link(
-                            "Naturezas Despesa 2024",
-                            href="/natureza-despesa-2024",
-                            refresh=True
-                        ),
-                        html.Br(),
-
-                        dcc.Link(
-                            "Execução TED",
-                            href="/execucao-ted",
-                            refresh=True
+                        html.Div(
+                            id="sidebar-menu",
+                            className="sidebar-menu",
                         ),
                     ],
                 ),
-
+                # CONTEÚDO PRINCIPAL
                 html.Div(
                     className="main-content",
                     children=dash.page_container,
                 ),
             ],
-        )
+        ),
     ],
 )
+
+# Callback para montar o menu e deixar o item selecionado em branco
+@app.callback(
+    dash.Output("sidebar-menu", "children"),
+    dash.Input("url", "pathname"),
+)
+def atualizar_menu(pathname):
+    itens = []
+    for m in menu_links:
+        active = pathname == m["href"]
+        class_name = "sidebar-button sidebar-button-active" if active else "sidebar-button"
+        itens.append(
+            dcc.Link(
+                m["label"],
+                href=m["href"],
+                className=class_name,
+            )
+        )
+    return itens
+
 
 if __name__ == "__main__":
     app.run(debug=True)

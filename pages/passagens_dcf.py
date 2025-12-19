@@ -1,4 +1,5 @@
 # pages/passagens_dcf.py
+
 # Painel: Gastos com Viagens (Passagens DCF)
 
 import dash
@@ -7,7 +8,6 @@ import plotly.express as px
 import pandas as pd
 from datetime import datetime
 from io import BytesIO
-
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.platypus import (
@@ -15,7 +15,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from reportlab.lib import colors
+from reportlab.lib import colors  # [file:6]
 
 # --------------------------------------------------
 # Registro da página
@@ -27,16 +27,21 @@ dash.register_page(
     title="Gastos com Viagens",
 )
 
+# --------------------------------------------------
+# URL da planilha
+# --------------------------------------------------
 URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1QJFSLpVO0bI-bsNdgiTWl8rOh1_h6_B7Q8F_SW66_yc/"
     "gviz/tq?tqx=out:csv&sheet=Passagens%20-%20DCF"
-)
+)  # [file:6]
 
+# --------------------------------------------------
+# Carga e tratamento dos dados
+# --------------------------------------------------
 def carregar_dados():
     df = pd.read_csv(URL)
     df.columns = [c.strip() for c in df.columns]
-
     df["Data Início da Viagem"] = pd.to_datetime(
         df["Data Início da Viagem"], format="%d/%m/%Y", errors="coerce"
     )
@@ -61,20 +66,20 @@ def carregar_dados():
         "Custo com emissão de passagens dentro do prazo",
         "Custo com emissão de passagens em caráter de urgência",
     ]
+
     for col in col_moeda:
         df[col] = df[col].apply(conv_moeda)
 
     df["Ano"] = df["Data Início da Viagem"].dt.year
     df["Mes"] = df["Data Início da Viagem"].dt.month
-
-    return df
+    return df  # [file:6]
 
 df = carregar_dados()
 ANO_PADRAO = int(sorted(df["Ano"].dropna().unique())[-1])
 
 nomes_meses = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ]
 
 dropdown_style = {
@@ -82,7 +87,7 @@ dropdown_style = {
     "width": "100%",
     "marginBottom": "10px",
     "whiteSpace": "normal",
-}
+}  # [file:6]
 
 # ----------------------------------------
 # Layout (conteúdo da página)
@@ -93,7 +98,6 @@ layout = html.Div(
             "Gastos com Viagens",
             style={"textAlign": "center"},
         ),
-
         html.Div(
             style={"marginBottom": "20px"},
             children=[
@@ -166,13 +170,13 @@ layout = html.Div(
                             "Limpar filtros",
                             id="btn_limpar_filtros_passagens",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                         ),
                         html.Button(
                             "Baixar Relatório PDF",
                             id="btn_download_relatorio_passagens",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                             style={"marginLeft": "10px"},
                         ),
                         dcc.Download(id="download_relatorio_passagens"),
@@ -180,12 +184,10 @@ layout = html.Div(
                 ),
             ],
         ),
-
         html.Div(
             id="cards_container_passagens",
             className="cards-container",
         ),
-
         html.Div(
             className="charts-row",
             children=[
@@ -193,7 +195,6 @@ layout = html.Div(
                 dcc.Graph(id="grafico_barras_passagens", style={"width": "50%"}),
             ],
         ),
-
         html.H4("Resumo por Unidade"),
         dash_table.DataTable(
             id="tabela_unidades_passagens",
@@ -217,7 +218,6 @@ layout = html.Div(
                 "backgroundColor": "#f0f0f0",
             },
         ),
-
         html.H4("Detalhamento por Unidade e PCDP"),
         dash_table.DataTable(
             id="tabela_detalhe_passagens",
@@ -247,10 +247,9 @@ layout = html.Div(
                 "backgroundColor": "#f0f0f0",
             },
         ),
-
         dcc.Store(id="store_graficos_passagens"),
     ],
-)
+)  # [file:6]
 
 # ----------------------------------------
 # 5. CALLBACK — Atualização geral
@@ -267,7 +266,6 @@ layout = html.Div(
 )
 def atualizar_pagina(ano, mes, unidade):
     dff = df.copy()
-
     if ano:
         dff = dff[dff["Ano"] == ano]
     if mes:
@@ -307,6 +305,7 @@ def atualizar_pagina(ano, mes, unidade):
     pizza_df = pd.DataFrame(
         {"Tipo": ["No prazo", "Urgência"], "Valor": [total_prazo, total_urgencia]}
     )
+
     fig_pizza = px.pie(
         pizza_df,
         names="Tipo",
@@ -318,14 +317,15 @@ def atualizar_pagina(ano, mes, unidade):
     )
     fig_pizza.update_layout(title_x=0.5)
     fig_pizza.update_traces(
-        texttemplate="<b>%{label}</b><br>R$ %{value:,.2f}<br>(%{percent})",
-        hovertemplate="<b>%{label}</b><br>R$ %{value:,.2f}<extra></extra>",
+        texttemplate="%{label}<br>R$ %{value:,.2f} (%{percent})",
+        hovertemplate="%{label}<br>R$ %{value:,.2f}",
         textposition="inside",
     )
 
     barras_df = pd.DataFrame(
         {"Categoria": ["Diárias", "Passagens"], "Valor": [total_diarias, total_passagem]}
     )
+
     fig_barras = px.bar(
         barras_df,
         x="Categoria",
@@ -338,23 +338,26 @@ def atualizar_pagina(ano, mes, unidade):
     fig_barras.update_traces(
         texttemplate="R$ %{y:,.2f}",
         textposition="inside",
-        hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>",
+        hovertemplate="%{x}<br>R$ %{y:,.2f}",
     )
     fig_barras.update_layout(
-        title_x=0.5, showlegend=False, yaxis_tickprefix="R$ ", yaxis_tickformat=",.2f"
+        title_x=0.5,
+        showlegend=False,
+        yaxis_tickprefix="R$ ",
+        yaxis_tickformat=",.2f",
     )
 
-    resumo = (
-        dff.groupby("Unidade (Viagem)", as_index=False)[
-            [
-                "Valor das Diárias",
-                "Valor da Passagem",
-                "Valor Restituição",
-                "Valor Seguro Viagem",
-            ]
+    # ---- groupby corrigido ----
+    resumo = dff.groupby(
+        "Unidade (Viagem)", as_index=False
+    )[
+        [
+            "Valor das Diárias",
+            "Valor da Passagem",
+            "Valor Restituição",
+            "Valor Seguro Viagem",
         ]
-        .sum()
-    )
+    ].sum()
 
     for col in [
         "Valor das Diárias",
@@ -377,7 +380,7 @@ def atualizar_pagina(ano, mes, unidade):
         },
     }
 
-    return cards, fig_pizza, fig_barras, resumo.to_dict("records"), dados_pdf
+    return cards, fig_pizza, fig_barras, resumo.to_dict("records"), dados_pdf  # [file:6]
 
 # ----------------------------------------
 # 6. CALLBACK — Tabela de Detalhamento
@@ -390,7 +393,6 @@ def atualizar_pagina(ano, mes, unidade):
 )
 def atualizar_detalhe(ano, mes, unidade):
     dff = df.copy()
-
     if ano:
         dff = dff[dff["Ano"] == ano]
     if mes:
@@ -407,7 +409,6 @@ def atualizar_detalhe(ano, mes, unidade):
             "Custo com emissão de passagens em caráter de urgência",
         ]
     ].copy()
-
     dff["Data Início da Viagem"] = dff["Data Início da Viagem"].dt.strftime("%d/%m/%Y")
 
     def f(v):
@@ -416,12 +417,11 @@ def atualizar_detalhe(ano, mes, unidade):
     dff["Custo com emissão de passagens dentro do prazo"] = dff[
         "Custo com emissão de passagens dentro do prazo"
     ].apply(f)
-
     dff["Custo com emissão de passagens em caráter de urgência"] = dff[
         "Custo com emissão de passagens em caráter de urgência"
     ].apply(f)
 
-    return dff.to_dict("records")
+    return dff.to_dict("records")  # [file:6]
 
 # ----------------------------------------
 # 7. CALLBACK — Limpar filtros
@@ -434,10 +434,10 @@ def atualizar_detalhe(ano, mes, unidade):
     prevent_initial_call=True,
 )
 def limpar(n):
-    return ANO_PADRAO, None, None
+    return ANO_PADRAO, None, None  # [file:6]
 
 # ----------------------------------------
-# 8. CALLBACK — Geração do PDF (sem gráficos, com cards)
+# 8. CALLBACK — Geração do PDF
 # ----------------------------------------
 wrap_style = ParagraphStyle(
     name="wrap",
@@ -465,12 +465,11 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
-
     styles = getSampleStyleSheet()
     story = []
 
     titulo = Paragraph(
-        "<b>Relatório de Gastos com Viagens</b>",
+        "Relatório de Gastos com Viagens",
         ParagraphStyle(
             "titulo", fontSize=22, alignment=TA_CENTER, textColor="#0b2b57"
         ),
@@ -481,9 +480,9 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     filtros = dados_pdf["filtros"]
     story.append(
         Paragraph(
-            f"<b>Ano:</b> {filtros['ano']} — "
-            f"<b>Mês:</b> {filtros['mes'] if filtros['mes'] else 'Todos'} — "
-            f"<b>Unidade:</b> {filtros['unidade'] if filtros['unidade'] else 'Todas'}",
+            f"Ano: {filtros['ano']} — "
+            f"Mês: {filtros['mes'] if filtros['mes'] else 'Todos'} — "
+            f"Unidade: {filtros['unidade'] if filtros['unidade'] else 'Todas'}",
             styles["Normal"],
         )
     )
@@ -518,8 +517,7 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     story.append(tbl_cards)
     story.append(Spacer(1, 0.4 * inch))
 
-    story.append(Paragraph("<b>Resumo por Unidade</b>", styles["Heading2"]))
-
+    story.append(Paragraph("Resumo por Unidade", styles["Heading2"]))
     table1 = [["Unidade", "Diárias", "Passagem", "Restituição", "Seguro"]]
     for r in resumo:
         table1.append(
@@ -533,7 +531,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
         )
 
     col_widths1 = [2.8 * inch, 1.0 * inch, 1.0 * inch, 1.0 * inch, 1.0 * inch]
-
     tbl1 = Table(table1, colWidths=col_widths1)
     tbl1.setStyle(
         TableStyle(
@@ -550,8 +547,7 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     story.append(tbl1)
     story.append(Spacer(1, 0.5 * inch))
 
-    story.append(Paragraph("<b>Detalhamento PCDP</b>", styles["Heading2"]))
-
+    story.append(Paragraph("Detalhamento PCDP", styles["Heading2"]))
     table2 = [["Unidade", "PCDP", "Data", "Prazo", "Urgência"]]
     for r in detalhe:
         table2.append(
@@ -565,7 +561,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
         )
 
     col_widths2 = [2.8 * inch, 1.0 * inch, 1.0 * inch, 1.2 * inch, 1.2 * inch]
-
     tbl2 = Table(table2, colWidths=col_widths2)
     tbl2.setStyle(
         TableStyle(
@@ -584,5 +579,6 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
 
     doc.build(story)
     buffer.seek(0)
+
     from dash import dcc
     return dcc.send_bytes(buffer.getvalue(), "relatorio_gastos_viagens.pdf")

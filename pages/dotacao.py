@@ -1,18 +1,18 @@
 # pages/dotacao.py
+
 # Painel: Dotação Atualizada e Destaques Recebidos
 
 import dash
 from dash import html, dcc, Input, Output, State, dash_table
 import pandas as pd
 import plotly.express as px
-
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from reportlab.lib import colors
+from reportlab.lib import colors  # [file:4]
 
 # --------------------------------------------------
 # Registro da página no Dash Pages
@@ -50,8 +50,7 @@ def carregar_dados():
 
     df["DOTACAO ATUALIZADA_VAL"] = df["DOTACAO ATUALIZADA"].apply(conv_moeda)
     df["DESTAQUE RECEBIDO_VAL"] = df["DESTAQUE RECEBIDO"].apply(conv_moeda)
-
-    return df
+    return df  # [file:4]
 
 df = carregar_dados()
 ANO_PADRAO = int(sorted(df["ANO"].dropna().unique())[-1])
@@ -65,7 +64,6 @@ layout = html.Div(
             "Dotação Atualizada e Destaques Recebidos",
             style={"textAlign": "center"},
         ),
-
         html.Div(
             style={"marginBottom": "20px"},
             children=[
@@ -81,7 +79,11 @@ layout = html.Div(
                                     id="filtro_grupo_dotacao",
                                     options=[
                                         {"label": g, "value": g}
-                                        for g in sorted(df["GRUPO DA DESPESA"].dropna().unique())
+                                        for g in sorted(
+                                            df["GRUPO DA DESPESA"]
+                                            .dropna()
+                                            .unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todos",
@@ -102,7 +104,9 @@ layout = html.Div(
                                     id="filtro_ano_dotacao",
                                     options=[
                                         {"label": int(a), "value": int(a)}
-                                        for a in sorted(df["ANO"].dropna().unique())
+                                        for a in sorted(
+                                            df["ANO"].dropna().unique()
+                                        )
                                     ],
                                     value=ANO_PADRAO,
                                     clearable=False,
@@ -123,7 +127,9 @@ layout = html.Div(
                                     options=[
                                         {"label": u, "value": u}
                                         for u in sorted(
-                                            df["UNIDADE ORÇAMENTÁRIA"].dropna().unique()
+                                            df["UNIDADE ORÇAMENTÁRIA"]
+                                            .dropna()
+                                            .unique()
                                         )
                                     ],
                                     value=None,
@@ -146,7 +152,9 @@ layout = html.Div(
                                     options=[
                                         {"label": f, "value": f}
                                         for f in sorted(
-                                            df["Fonte Recursos Detalhada"].dropna().unique()
+                                            df["Fonte Recursos Detalhada"]
+                                            .dropna()
+                                            .unique()
                                         )
                                     ],
                                     value=None,
@@ -169,13 +177,13 @@ layout = html.Div(
                             "Limpar filtros",
                             id="btn_limpar_filtros_dotacao",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                         ),
                         html.Button(
                             "Baixar Relatório PDF",
                             id="btn_download_relatorio_dotacao",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                             style={"marginLeft": "10px"},
                         ),
                         dcc.Download(id="download_relatorio_dotacao"),
@@ -183,12 +191,10 @@ layout = html.Div(
                 ),
             ],
         ),
-
         html.Div(
             id="cards_container_dotacao",
             className="cards-container",
         ),
-
         html.Div(
             className="charts-row",
             children=[
@@ -196,23 +202,31 @@ layout = html.Div(
                 dcc.Graph(id="grafico_pizza_destaque", style={"width": "50%"}),
             ],
         ),
-
         html.Div(
             className="charts-row",
             children=[
-                dcc.Graph(id="grafico_barra_dotacao_fonte", style={"width": "50%"}),
-                dcc.Graph(id="grafico_barra_destaque_fonte", style={"width": "50%"}),
+                dcc.Graph(
+                    id="grafico_barra_dotacao_fonte", style={"width": "50%"}
+                ),
+                dcc.Graph(
+                    id="grafico_barra_destaque_fonte", style={"width": "50%"}
+                ),
             ],
         ),
-
         html.H4("Detalhamento"),
         dash_table.DataTable(
             id="tabela_dotacao",
             columns=[
                 {"name": "GRUPO DA DESPESA", "id": "GRUPO DA DESPESA"},
                 {"name": "ANO", "id": "ANO"},
-                {"name": "UNIDADE ORÇAMENTÁRIA", "id": "UNIDADE ORÇAMENTÁRIA"},
-                {"name": "Fonte Recursos Detalhada", "id": "Fonte Recursos Detalhada"},
+                {
+                    "name": "UNIDADE ORÇAMENTÁRIA",
+                    "id": "UNIDADE ORÇAMENTÁRIA",
+                },
+                {
+                    "name": "Fonte Recursos Detalhada",
+                    "id": "Fonte Recursos Detalhada",
+                },
                 {"name": "DOTACAO ATUALIZADA", "id": "DOTACAO ATUALIZADA"},
                 {"name": "DESTAQUE RECEBIDO", "id": "DESTAQUE RECEBIDO"},
             ],
@@ -229,7 +243,6 @@ layout = html.Div(
                 "color": "white",
             },
         ),
-
         dcc.Store(id="store_pdf_dotacao"),
     ],
 )
@@ -286,8 +299,12 @@ def atualizar_painel(grupo, ano, unidade, fonte):
     ]
 
     dff_display = dff.copy()
-    dff_display["DOTACAO ATUALIZADA"] = dff_display["DOTACAO ATUALIZADA_VAL"].apply(fmt)
-    dff_display["DESTAQUE RECEBIDO"] = dff_display["DESTAQUE RECEBIDO_VAL"].apply(fmt)
+    dff_display["DOTACAO ATUALIZADA"] = dff_display[
+        "DOTACAO ATUALIZADA_VAL"
+    ].apply(fmt)
+    dff_display["DESTAQUE RECEBIDO"] = dff_display[
+        "DESTAQUE RECEBIDO_VAL"
+    ].apply(fmt)
 
     colunas = [
         "GRUPO DA DESPESA",
@@ -311,7 +328,7 @@ def atualizar_painel(grupo, ano, unidade, fonte):
         )
         fig_pizza_dot.update_traces(
             texttemplate="%{label}<br>R$ %{value:,.2f}",
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
+            hovertemplate="%{label}<br>R$ %{value:,.2f}",
             marker=dict(colors=["#003A70", "#DA291C", "#A2AAAD"]),
         )
         fig_pizza_dot.update_layout(
@@ -321,7 +338,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
             title_y=0.95,
         )
     else:
-        fig_pizza_dot = px.pie(title="Sem dados para os filtros selecionados")
+        fig_pizza_dot = px.pie(
+            title="Sem dados para os filtros selecionados"
+        )
 
     if not dff.empty:
         grp_des_grupo = dff.groupby(
@@ -335,7 +354,7 @@ def atualizar_painel(grupo, ano, unidade, fonte):
         )
         fig_pizza_des.update_traces(
             texttemplate="%{label}<br>R$ %{value:,.2f}",
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
+            hovertemplate="%{label}<br>R$ %{value:,.2f}",
             marker=dict(colors=["#003A70", "#DA291C", "#A2AAAD"]),
         )
         fig_pizza_des.update_layout(
@@ -345,7 +364,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
             title_y=0.95,
         )
     else:
-        fig_pizza_des = px.pie(title="Sem dados para os filtros selecionados")
+        fig_pizza_des = px.pie(
+            title="Sem dados para os filtros selecionados"
+        )
 
     def texto_posicoes(valores):
         max_v = max(valores) if len(valores) else 0
@@ -370,10 +391,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
         )
         valores = grp_dot_fonte["DOTACAO ATUALIZADA_VAL"].tolist()
         posicoes = texto_posicoes(valores)
-
         fig_bar_dot.update_traces(
             marker_color="#003A70",
-            hovertemplate="Fonte=%{y}<br>Dotação=R$ %{x:,.2f}<extra></extra>",
+            hovertemplate="Fonte=%{y}<br>Dotação=R$ %{x:,.2f}",
             text=[fmt(v) for v in valores],
             textposition=posicoes,
             textfont_color="white",
@@ -390,7 +410,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
             font_color="black",
         )
     else:
-        fig_bar_dot = px.bar(title="Sem dados para os filtros selecionados")
+        fig_bar_dot = px.bar(
+            title="Sem dados para os filtros selecionados"
+        )
 
     if not dff.empty:
         grp_des_fonte = dff.groupby(
@@ -405,10 +427,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
         )
         valores_des = grp_des_fonte["DESTAQUE RECEBIDO_VAL"].tolist()
         posicoes_des = texto_posicoes(valores_des)
-
         fig_bar_des.update_traces(
             marker_color="#DA291C",
-            hovertemplate="Fonte=%{y}<br>Destaque=R$ %{x:,.2f}<extra></extra>",
+            hovertemplate="Fonte=%{y}<br>Destaque=R$ %{x:,.2f}",
             text=[fmt(v) for v in valores_des],
             textposition=posicoes_des,
             textfont_color="white",
@@ -425,7 +446,9 @@ def atualizar_painel(grupo, ano, unidade, fonte):
             font_color="black",
         )
     else:
-        fig_bar_des = px.bar(title="Sem dados para os filtros selecionados")
+        fig_bar_des = px.bar(
+            title="Sem dados para os filtros selecionados"
+        )
 
     dados_pdf = {
         "tabela": dff_display.to_dict("records"),
@@ -519,47 +542,62 @@ def gerar_pdf(n, dados_pdf):
         ["Dotação Atualizada", fmt(dados_pdf["total_dotacao"])],
         ["Destaques Recebidos", fmt(dados_pdf["total_destaque"])],
     ]
+
     tbl_cards = Table(cards_data, colWidths=[3.0 * inch, 3.0 * inch])
     tbl_cards.setStyle(
-        TableStyle([
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-            ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#0b2b57")),
-            ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ])
+        TableStyle(
+            [
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor("#0b2b57")),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ]
+        )
     )
     story.append(tbl_cards)
     story.append(Spacer(1, 0.35 * inch))
 
     table_data = [["GRUPO", "ANO", "UNIDADE", "FONTE", "DOTACAO", "DESTAQUE"]]
     for r in dados_pdf["tabela"]:
-        table_data.append([
-            wrap(r["GRUPO DA DESPESA"]),
-            wrap(r["ANO"]),
-            wrap(r["UNIDADE ORÇAMENTÁRIA"]),
-            wrap(r["Fonte Recursos Detalhada"]),
-            wrap(r["DOTACAO ATUALIZADA"]),
-            wrap(r["DESTAQUE RECEBIDO"]),
-        ])
+        table_data.append(
+            [
+                wrap(r["GRUPO DA DESPESA"]),
+                wrap(r["ANO"]),
+                wrap(r["UNIDADE ORÇAMENTÁRIA"]),
+                wrap(r["Fonte Recursos Detalhada"]),
+                wrap(r["DOTACAO ATUALIZADA"]),
+                wrap(r["DESTAQUE RECEBIDO"]),
+            ]
+        )
 
-    col_widths = [1.2 * inch, 0.6 * inch, 2.0 * inch, 2.5 * inch, 1.0 * inch, 1.0 * inch]
+    col_widths = [
+        1.2 * inch,
+        0.6 * inch,
+        2.0 * inch,
+        2.5 * inch,
+        1.0 * inch,
+        1.0 * inch,
+    ]
     tbl = Table(table_data, colWidths=col_widths)
     tbl.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b2b57")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("WORDWRAP", (0, 0), (-1, -1), True),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ])
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b2b57")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("WORDWRAP", (0, 0), (-1, -1), True),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ]
+        )
     )
-    story.append(tbl)
 
+    story.append(tbl)
     doc.build(story)
     buffer.seek(0)
+
     from dash import dcc
     return dcc.send_bytes(buffer.getvalue(), "dotacao_destaques.pdf")

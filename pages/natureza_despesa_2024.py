@@ -1,55 +1,55 @@
 # pages/natureza_despesa_2024.py
-# Painel: Naturezas de Despesa utilizadas em 2024 (sem filtros)
 
 import dash
 from dash import html, dcc, dash_table
 import pandas as pd
 
-# --------------------------------------------------
-# Registro da página
-# --------------------------------------------------
+# Painel: Naturezas de Despesa utilizadas em 2024 sem filtros
+
 dash.register_page(
     __name__,
     path="/natureza-despesa-2024",
     name="Naturezas 2024",
-    title="Naturezas de Despesa 2024",
+    title="Naturezas de Despesa",
 )
 
-# --------------------------------------------------
-# URL da planilha (aba TODOS 1)
-# --------------------------------------------------
 URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1ofT3KdBLI26nDp2SsYePjAgaDIObHT3WDZRwb34g2EU/"
-    "gviz/tq?tqx=out:csv&sheet=TODOS%201"
+    "gviz/tq?tqx=out:csv&sheet=TODOS201"
 )
 
-# --------------------------------------------------
-# Carga dos dados
-# --------------------------------------------------
 def carregar_dados():
     df = pd.read_csv(URL)
     df.columns = [c.strip() for c in df.columns]
-    return df
+    # Mantém apenas as colunas desejadas
+    df = df[["ND SOF", "TITULO"]]
+    return df  # [file:2]
 
 df = carregar_dados()
 
-# Mantém apenas as colunas desejadas
-df = df[["ND SOF", "TITULO"]]
-
-# --------------------------------------------------
-# Layout (tabela centralizada e mais estreita)
-# --------------------------------------------------
 layout = html.Div(
     children=[
         html.H2(
-            "Naturezas de Despesa utilizadas em 2024",
+            "Naturezas de Despesa",
             style={"textAlign": "center"},
         ),
         html.Div(
+            style={"marginBottom": "10px", "textAlign": "right"},
+            children=[
+                html.Button(
+                    "Baixar Relatório PDF",
+                    id="btn_download_relatorio_natureza_2024",
+                    n_clicks=0,
+                    className="filtros-button",
+                ),
+                dcc.Download(id="download_relatorio_natureza_2024"),
+            ],
+        ),
+        html.Div(
             style={
-                "maxWidth": "800px",   # largura máxima da área da tabela
-                "margin": "0 auto",    # centraliza horizontalmente
+                "maxWidth": "800px",
+                "margin": "0 auto",
             },
             children=[
                 dash_table.DataTable(
@@ -74,7 +74,7 @@ layout = html.Div(
                         "color": "white",
                     },
                     page_size=50,
-                ),
+                )
             ],
         ),
     ]

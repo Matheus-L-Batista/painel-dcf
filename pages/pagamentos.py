@@ -1,4 +1,5 @@
 # pages/pagamentos.py
+
 # Painel: Pagamentos Efetivados
 
 import dash
@@ -7,13 +8,12 @@ import pandas as pd
 from datetime import datetime
 from io import BytesIO
 import plotly.express as px
-
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from reportlab.lib import colors
+from reportlab.lib import colors  # [file:5]
 
 # --------------------------------------------------
 # Registro da página
@@ -37,22 +37,26 @@ URL = (
 def carregar_dados():
     df = pd.read_csv(URL)
     df.columns = [c.strip() for c in df.columns]
-
-    df = df.rename(columns={
-        "Unnamed: 2": "DT ATESTE",
-        "Unnamed: 3": "DT PGTO",
-    })
-
-    df["DT ATESTE"] = pd.to_datetime(df["DT ATESTE"], format="%d/%m/%Y", errors="coerce")
-    df["DT PGTO"]   = pd.to_datetime(df["DT PGTO"],   format="%d/%m/%Y", errors="coerce")
+    df = df.rename(
+        columns={
+            "Unnamed: 2": "DT ATESTE",
+            "Unnamed: 3": "DT PGTO",
+        }
+    )
+    df["DT ATESTE"] = pd.to_datetime(
+        df["DT ATESTE"], format="%d/%m/%Y", errors="coerce"
+    )
+    df["DT PGTO"] = pd.to_datetime(
+        df["DT PGTO"], format="%d/%m/%Y", errors="coerce"
+    )
 
     def conv_moeda(valor):
         if isinstance(valor, str):
             v = (
                 valor.replace("R$", "")
-                  .replace(".", "")
-                  .replace(",", ".")
-                  .strip()
+                .replace(".", "")
+                .replace(",", ".")
+                .strip()
             )
             return float(v) if v not in ["", "-"] else 0.0
         return float(valor) if pd.notna(valor) else 0.0
@@ -60,16 +64,24 @@ def carregar_dados():
     df["Valor"] = df["Valor"].apply(conv_moeda)
 
     mapa_meses = {
-        "JANEIRO": 1, "FEVEREIRO": 2, "MARÇO": 3, "MARCO": 3,
-        "ABRIL": 4, "MAIO": 5, "JUNHO": 6, "JULHO": 7,
-        "AGOSTO": 8, "SETEMBRO": 9, "OUTUBRO": 10,
-        "NOVEMBRO": 11, "DEZEMBRO": 12,
+        "JANEIRO": 1,
+        "FEVEREIRO": 2,
+        "MARÇO": 3,
+        "MARCO": 3,
+        "ABRIL": 4,
+        "MAIO": 5,
+        "JUNHO": 6,
+        "JULHO": 7,
+        "AGOSTO": 8,
+        "SETEMBRO": 9,
+        "OUTUBRO": 10,
+        "NOVEMBRO": 11,
+        "DEZEMBRO": 12,
     }
 
     df["Ano"] = df["ANO"].astype(int)
     df["Mes"] = df["MÊS"].astype(str).str.upper().map(mapa_meses)
-
-    return df
+    return df  # [file:5]
 
 df = carregar_dados()
 ANO_PADRAO = int(sorted(df["Ano"].dropna().unique())[-1])
@@ -78,8 +90,18 @@ ANO_PADRAO = int(sorted(df["Ano"].dropna().unique())[-1])
 # 3. LISTA DE MESES (para o dropdown)
 # ----------------------------------------
 nomes_meses = [
-    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    "janeiro",
+    "fevereiro",
+    "março",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
 ]
 
 dropdown_style = {
@@ -87,7 +109,7 @@ dropdown_style = {
     "width": "100%",
     "marginBottom": "10px",
     "whiteSpace": "normal",
-}
+}  # [file:5]
 
 # ----------------------------------------
 # 4. LAYOUT DA PÁGINA (somente conteúdo)
@@ -98,7 +120,6 @@ layout = html.Div(
             "Pagamentos Efetivados",
             style={"textAlign": "center"},
         ),
-
         html.Div(
             style={"marginBottom": "20px"},
             children=[
@@ -114,7 +135,9 @@ layout = html.Div(
                                     id="filtro_ano_pagamentos",
                                     options=[
                                         {"label": int(a), "value": int(a)}
-                                        for a in sorted(df["Ano"].dropna().unique())
+                                        for a in sorted(
+                                            df["Ano"].dropna().unique()
+                                        )
                                     ],
                                     value=ANO_PADRAO,
                                     clearable=False,
@@ -132,7 +155,9 @@ layout = html.Div(
                                     id="filtro_mes_pagamentos",
                                     options=[
                                         {"label": m.capitalize(), "value": i}
-                                        for i, m in enumerate(nomes_meses, start=1)
+                                        for i, m in enumerate(
+                                            nomes_meses, start=1
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todos",
@@ -151,7 +176,9 @@ layout = html.Div(
                                     id="filtro_lista_pagamentos",
                                     options=[
                                         {"label": u, "value": u}
-                                        for u in sorted(df["LISTAS"].dropna().unique())
+                                        for u in sorted(
+                                            df["LISTAS"].dropna().unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todas",
@@ -170,7 +197,9 @@ layout = html.Div(
                                     id="filtro_fonte_pagamentos",
                                     options=[
                                         {"label": str(u), "value": str(u)}
-                                        for u in sorted(df["FONTE"].dropna().unique())
+                                        for u in sorted(
+                                            df["FONTE"].dropna().unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todas",
@@ -190,13 +219,13 @@ layout = html.Div(
                             "Limpar filtros",
                             id="btn_limpar_filtros_pagamentos",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                         ),
                         html.Button(
                             "Baixar Relatório PDF",
                             id="btn_download_relatorio_pagamentos",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                             style={"marginLeft": "10px"},
                         ),
                         dcc.Download(id="download_relatorio_pagamentos"),
@@ -204,7 +233,6 @@ layout = html.Div(
                 ),
             ],
         ),
-
         html.Div(
             className="charts-row",
             children=[
@@ -212,7 +240,6 @@ layout = html.Div(
                 dcc.Graph(id="grafico_fonte_pagamentos", style={"width": "50%"}),
             ],
         ),
-
         html.H4("Detalhamento de Pagamentos"),
         dash_table.DataTable(
             id="tabela_pagamentos",
@@ -241,7 +268,7 @@ layout = html.Div(
                     "if": {"column_id": "Valor"},
                     "color": "#0b2b57",
                     "fontWeight": "bold",
-                },
+                }
             ],
             style_header={
                 "fontWeight": "bold",
@@ -250,7 +277,6 @@ layout = html.Div(
                 "textAlign": "center",
             },
         ),
-
         dcc.Store(id="store_dados_pagamentos"),
     ],
 )
@@ -285,11 +311,23 @@ def atualizar_tabela(ano, mes, lista, fonte):
     dff_display["DT PGTO"] = dff_display["DT PGTO"].dt.strftime("%d/%m/%Y")
 
     def formatar_moeda(v):
-        return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return (
+            f"R$ {v:,.2f}"
+            .replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+        )
 
     dff_display["Valor"] = dff_display["Valor"].apply(formatar_moeda)
 
-    colunas_exibir = ["DT ATESTE", "DT PGTO", "Valor", "FONTE", "LISTAS", "RAZÃO SOCIAL"]
+    colunas_exibir = [
+        "DT ATESTE",
+        "DT PGTO",
+        "Valor",
+        "FONTE",
+        "LISTAS",
+        "RAZÃO SOCIAL",
+    ]
     dff_display = dff_display[colunas_exibir]
 
     dados_pdf = {
@@ -312,7 +350,7 @@ def atualizar_tabela(ano, mes, lista, fonte):
     )
     fig_lista.update_traces(
         line_color="#003A70",
-        hovertemplate="Lista=%{x}<br>Valor=R$ %{y:,.2f}<extra></extra>",
+        hovertemplate="Lista=%{x}<br>Valor=R$ %{y:,.2f}",
     )
     fig_lista.update_layout(
         xaxis_title="Lista",
@@ -335,7 +373,7 @@ def atualizar_tabela(ano, mes, lista, fonte):
     )
     fig_fonte.update_traces(
         line_color="#DA291C",
-        hovertemplate="FONTE=%{x}<br>Valor=R$ %{y:,.2f}<extra></extra>",
+        hovertemplate="FONTE=%{x}<br>Valor=R$ %{y:,.2f}",
     )
     fig_fonte.update_layout(
         xaxis_title="Fonte",
@@ -412,43 +450,62 @@ def gerar_pdf(n, tabela, dados_pdf):
     story.append(Spacer(1, 0.3 * inch))
 
     def fmt(v):
-        return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return (
+            f"R$ {v:,.2f}"
+            .replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
+        )
 
     story.append(
         Paragraph(
-            f"<b>Total Geral: {fmt(dados_pdf['total_geral'])}</b>",
+            f"Total Geral: {fmt(dados_pdf['total_geral'])}",
             styles["Normal"],
         )
     )
     story.append(Spacer(1, 0.2 * inch))
 
-    table_data = [["DT ATESTE", "DT PGTO", "Valor", "FONTE", "LISTAS", "RAZÃO SOCIAL"]]
+    table_data = [
+        ["DT ATESTE", "DT PGTO", "Valor", "FONTE", "LISTAS", "RAZÃO SOCIAL"]
+    ]
     for r in dados_pdf["tabela"]:
-        table_data.append([
-            wrap(r["DT ATESTE"]),
-            wrap(r["DT PGTO"]),
-            wrap(r["Valor"]),
-            wrap(r["FONTE"]),
-            wrap(r["LISTAS"]),
-            wrap(r["RAZÃO SOCIAL"][:30]),
-        ])
+        table_data.append(
+            [
+                wrap(r["DT ATESTE"]),
+                wrap(r["DT PGTO"]),
+                wrap(r["Valor"]),
+                wrap(r["FONTE"]),
+                wrap(r["LISTAS"]),
+                wrap(r["RAZÃO SOCIAL"][:30]),
+            ]
+        )
 
-    col_widths = [1.0 * inch, 1.0 * inch, 1.0 * inch, 1.0 * inch, 1.0 * inch, 1.3 * inch]
+    col_widths = [
+        1.0 * inch,
+        1.0 * inch,
+        1.0 * inch,
+        1.0 * inch,
+        1.0 * inch,
+        1.3 * inch,
+    ]
     tbl = Table(table_data, colWidths=col_widths)
     tbl.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b2b57")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("WORDWRAP", (0, 0), (-1, -1), True),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ])
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0b2b57")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("WORDWRAP", (0, 0), (-1, -1), True),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ]
+        )
     )
-    story.append(tbl)
 
+    story.append(tbl)
     doc.build(story)
     buffer.seek(0)
+
     from dash import dcc
     return dcc.send_bytes(buffer.getvalue(), "pagamentos_efetivados.pdf")

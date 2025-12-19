@@ -1,18 +1,18 @@
 # pages/execucao_orcamento_unifei.py
+
 # Painel: Execução do Orçamento - UNIFEI
 
 import dash
 from dash import html, dcc, Input, Output, State, dash_table
 import pandas as pd
 import plotly.express as px
-
 from io import BytesIO
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from reportlab.lib import colors
+from reportlab.lib import colors  # [file:9]
 
 # --------------------------------------------------
 # Registro da página
@@ -58,11 +58,11 @@ def carregar_dados():
         "DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)",
         "DESPESAS PAGAS (CONTROLE EMPENHO)",
     ]
+
     for c in col_valores:
         df[c + "_VAL"] = df[c].apply(conv_moeda)
 
-    return df
-
+    return df  # [file:9]
 
 df = carregar_dados()
 ANO_PADRAO = int(sorted(df["Ano"].dropna().unique())[-1])
@@ -82,7 +82,6 @@ layout = html.Div(
             "Execução do Orçamento - UNIFEI",
             style={"textAlign": "center"},
         ),
-
         html.Div(
             style={"marginBottom": "20px"},
             children=[
@@ -99,7 +98,9 @@ layout = html.Div(
                                     options=[
                                         {"label": u, "value": u}
                                         for u in sorted(
-                                            df["UG Executora"].dropna().unique()
+                                            df["UG Executora"]
+                                            .dropna()
+                                            .unique()
                                         )
                                     ],
                                     value=None,
@@ -117,7 +118,9 @@ layout = html.Div(
                                     id="filtro_mes_unifei",
                                     options=[
                                         {"label": m, "value": m}
-                                        for m in sorted(df["Mês"].dropna().unique())
+                                        for m in sorted(
+                                            df["Mês"].dropna().unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todos",
@@ -134,7 +137,9 @@ layout = html.Div(
                                     id="filtro_ano_unifei",
                                     options=[
                                         {"label": int(a), "value": int(a)}
-                                        for a in sorted(df["Ano"].dropna().unique())
+                                        for a in sorted(
+                                            df["Ano"].dropna().unique()
+                                        )
                                     ],
                                     value=ANO_PADRAO,
                                     clearable=False,
@@ -152,8 +157,8 @@ layout = html.Div(
                                         {"label": f, "value": f}
                                         for f in sorted(
                                             df["Fonte Recursos Detalhada"]
-                                                .dropna()
-                                                .unique()
+                                            .dropna()
+                                            .unique()
                                         )
                                     ],
                                     value=None,
@@ -171,7 +176,9 @@ layout = html.Div(
                                     id="filtro_grupo_unifei",
                                     options=[
                                         {"label": g, "value": g}
-                                        for g in sorted(df["GRUPO DESP"].dropna().unique())
+                                        for g in sorted(
+                                            df["GRUPO DESP"].dropna().unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todos",
@@ -188,7 +195,9 @@ layout = html.Div(
                                     id="filtro_nat_unifei",
                                     options=[
                                         {"label": n, "value": n}
-                                        for n in sorted(df["NAT DESP"].dropna().unique())
+                                        for n in sorted(
+                                            df["NAT DESP"].dropna().unique()
+                                        )
                                     ],
                                     value=None,
                                     placeholder="Todas",
@@ -206,13 +215,13 @@ layout = html.Div(
                             "Limpar filtros",
                             id="btn_limpar_filtros_unifei",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                         ),
                         html.Button(
                             "Baixar Relatório PDF",
                             id="btn_download_relatorio_unifei",
                             n_clicks=0,
-                            className="sidebar-button",
+                            className="filtros-button",
                             style={"marginLeft": "10px"},
                         ),
                         dcc.Download(id="download_relatorio_unifei"),
@@ -220,20 +229,21 @@ layout = html.Div(
                 ),
             ],
         ),
-
         html.Div(
             id="cards_container_unifei",
             className="cards-container",
         ),
-
         html.Div(
             className="charts-row",
             children=[
-                dcc.Graph(id="grafico_barras_grupo_unifei", style={"width": "50%"}),
-                dcc.Graph(id="grafico_pizza_status_unifei", style={"width": "50%"}),
+                dcc.Graph(
+                    id="grafico_barras_grupo_unifei", style={"width": "50%"}
+                ),
+                dcc.Graph(
+                    id="grafico_pizza_status_unifei", style={"width": "50%"}
+                ),
             ],
         ),
-
         html.H4("Detalhamento"),
         dash_table.DataTable(
             id="tabela_execucao_unifei",
@@ -282,7 +292,6 @@ layout = html.Div(
                 "color": "white",
             },
         ),
-
         dcc.Store(id="store_pdf_unifei"),
     ],
 )
@@ -322,10 +331,14 @@ def atualizar_painel(ug_exec, mes, ano, fonte, grupo, nat):
     def fmt(v):
         return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    total_rp = dff["DESPESAS INSCRITAS EM RP NAO PROCESSADOS_VAL"].sum()
+    total_rp = dff[
+        "DESPESAS INSCRITAS EM RP NAO PROCESSADOS_VAL"
+    ].sum()
     total_emp = dff["DESPESAS EMPENHADAS (CONTROLE EMPENHO)_VAL"].sum()
     total_liq = dff["DESPESAS LIQUIDADAS (CONTROLE EMPENHO)_VAL"].sum()
-    total_liq_pagar = dff["DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)_VAL"].sum()
+    total_liq_pagar = dff[
+        "DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)_VAL"
+    ].sum()
     total_pagas = dff["DESPESAS PAGAS (CONTROLE EMPENHO)_VAL"].sum()
 
     def card(titulo, valor):
@@ -371,7 +384,8 @@ def atualizar_painel(ug_exec, mes, ano, fonte, grupo, nat):
             ]
             .sum()
             .sort_values(
-                "DESPESAS EMPENHADAS (CONTROLE EMPENHO)_VAL", ascending=False
+                "DESPESAS EMPENHADAS (CONTROLE EMPENHO)_VAL",
+                ascending=False,
             )
         )
         fig_barras = px.bar(
@@ -382,15 +396,12 @@ def atualizar_painel(ug_exec, mes, ano, fonte, grupo, nat):
         )
         fig_barras.update_traces(
             marker_color="#003A70",
-            text=[
-                fmt(v)
-                for v in grp_grupo[
-                    "DESPESAS EMPENHADAS (CONTROLE EMPENHO)_VAL"
-                ]
-            ],
+            text=[fmt(v) for v in grp_grupo[
+                "DESPESAS EMPENHADAS (CONTROLE EMPENHO)_VAL"
+            ]],
             textposition="inside",
             insidetextanchor="middle",
-            hovertemplate="Grupo=%{x}<br>Empenhadas=R$ %{y:,.2f}<extra></extra>",
+            hovertemplate="Grupo=%{x}<br>Empenhadas=R$ %{y:,.2f}",
         )
         fig_barras.update_layout(
             xaxis_title="Grupo de Despesa",
@@ -402,7 +413,9 @@ def atualizar_painel(ug_exec, mes, ano, fonte, grupo, nat):
             uniformtext_mode="hide",
         )
     else:
-        fig_barras = px.bar(title="Sem dados para os filtros selecionados")
+        fig_barras = px.bar(
+            title="Sem dados para os filtros selecionados"
+        )
 
     if total_emp + total_liq + total_pagas > 0:
         df_pizza = pd.DataFrame(
@@ -425,7 +438,7 @@ def atualizar_painel(ug_exec, mes, ano, fonte, grupo, nat):
         )
         fig_pizza.update_traces(
             texttemplate="%{label}<br>R$ %{value:,.2f}",
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
+            hovertemplate="%{label}<br>R$ %{value:,.2f}",
         )
         fig_pizza.update_layout(
             legend_title="Status",
@@ -521,17 +534,17 @@ def gerar_pdf(n, dados_pdf):
     f = dados_pdf["filtros"]
     story.append(
         Paragraph(
-            f"<b>UG Executora:</b> {f['ug_exec'] if f['ug_exec'] else 'Todas'} | "
-            f"<b>Mês:</b> {f['mes'] if f['mes'] else 'Todos'} | "
-            f"<b>Ano:</b> {f['ano'] if f['ano'] else 'Todos'}",
+            f"UG Executora: {f['ug_exec'] if f['ug_exec'] else 'Todas'} | "
+            f"Mês: {f['mes'] if f['mes'] else 'Todos'} | "
+            f"Ano: {f['ano'] if f['ano'] else 'Todos'}",
             ParagraphStyle("filtros", fontSize=7, alignment=TA_LEFT),
         )
     )
     story.append(
         Paragraph(
-            f"<b>Fonte:</b> {f['fonte'] if f['fonte'] else 'Todas'} | "
-            f"<b>Grupo:</b> {f['grupo'] if f['grupo'] else 'Todos'} | "
-            f"<b>Natureza:</b> {f['nat'] if f['nat'] else 'Todas'}",
+            f"Fonte: {f['fonte'] if f['fonte'] else 'Todas'} | "
+            f"Grupo: {f['grupo'] if f['grupo'] else 'Todos'} | "
+            f"Natureza: {f['nat'] if f['nat'] else 'Todas'}",
             ParagraphStyle("filtros", fontSize=7, alignment=TA_LEFT),
         )
     )
@@ -548,6 +561,7 @@ def gerar_pdf(n, dados_pdf):
         ["Liquidadas a Pagar", fmt(tot["liq_pagar"])],
         ["Pagas", fmt(tot["pagas"])],
     ]
+
     tbl_cards = Table(cards_data, colWidths=[3.0 * inch, 3.0 * inch])
     tbl_cards.setStyle(
         TableStyle(
@@ -587,7 +601,9 @@ def gerar_pdf(n, dados_pdf):
                 wrap(r["DESPESAS INSCRITAS EM RP NAO PROCESSADOS"]),
                 wrap(r["DESPESAS EMPENHADAS (CONTROLE EMPENHO)"]),
                 wrap(r["DESPESAS LIQUIDADAS (CONTROLE EMPENHO)"]),
-                wrap(r["DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)"]),
+                wrap(
+                    r["DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)"]
+                ),
                 wrap(r["DESPESAS PAGAS (CONTROLE EMPENHO)"]),
             ]
         )
@@ -615,8 +631,12 @@ def gerar_pdf(n, dados_pdf):
                 ("WORDWRAP", (0, 0), (-1, -1), True),
                 ("FONTSIZE", (0, 0), (-1, 0), 6),
                 ("FONTSIZE", (0, 1), (-1, -1), 6),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                 [colors.white, colors.HexColor("#f5f5f5")]),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#f5f5f5")],
+                ),
                 ("LEFTPADDING", (0, 0), (-1, -1), 3),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 3),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
@@ -624,10 +644,10 @@ def gerar_pdf(n, dados_pdf):
             ]
         )
     )
-    story.append(tbl)
 
+    story.append(tbl)
     doc.build(story)
     buffer.seek(0)
-    from dash import dcc
 
+    from dash import dcc
     return dcc.send_bytes(buffer.getvalue(), "execucao_orcamento_unifei.pdf")
