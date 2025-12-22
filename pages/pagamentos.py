@@ -1,5 +1,3 @@
-# Painel: Pagamentos Efetivados
-
 import dash
 from dash import html, dcc, Input, Output, State, dash_table
 import pandas as pd
@@ -13,7 +11,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib import colors
 
-
 # --------------------------------------------------
 # Registro da página
 # --------------------------------------------------
@@ -24,13 +21,11 @@ dash.register_page(
     title="Pagamentos Efetivados",
 )
 
-
 URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1KEEohPamH36URHpPjFjpVmSNOoK3429erayoPv6fcDo/"
     "gviz/tq?tqx=out:csv&sheet=Pagamentos%20Efetivados"
 )
-
 
 # ----------------------------------------
 # 2. CARGA E TRATAMENTO DOS DADOS
@@ -84,11 +79,9 @@ def carregar_dados():
     df["Mes"] = df["MÊS"].astype(str).str.upper().map(mapa_meses)
     return df
 
-
-# 🔧 B) DF base inicial
+# DF base inicial
 df_base = carregar_dados()
 ANO_PADRAO = int(sorted(df_base["Ano"].dropna().unique())[-1])
-
 
 # ----------------------------------------
 # 3. LISTA DE MESES (para o dropdown)
@@ -115,9 +108,8 @@ dropdown_style = {
     "whiteSpace": "normal",
 }
 
-
 # ----------------------------------------
-# 4. LAYOUT DA PÁGINA (somente conteúdo)
+# 4. LAYOUT DA PÁGINA
 # ----------------------------------------
 layout = html.Div(
     children=[
@@ -145,13 +137,8 @@ layout = html.Div(
                                 dcc.Dropdown(
                                     id="filtro_ano_pagamentos",
                                     options=[
-                                        {
-                                            "label": int(a),
-                                            "value": int(a),
-                                        }
-                                        for a in sorted(
-                                            df_base["Ano"].dropna().unique()
-                                        )
+                                        {"label": int(a), "value": int(a)}
+                                        for a in sorted(df_base["Ano"].dropna().unique())
                                     ],
                                     value=ANO_PADRAO,
                                     clearable=False,
@@ -160,6 +147,7 @@ layout = html.Div(
                                 ),
                             ],
                         ),
+
                         # Mês
                         html.Div(
                             style={"minWidth": "140px", "flex": "0 0 160px"},
@@ -168,22 +156,22 @@ layout = html.Div(
                                 dcc.Dropdown(
                                     id="filtro_mes_pagamentos",
                                     options=[
-                                        {
-                                            "label": m.capitalize(),
-                                            "value": i,
-                                        }
-                                        for i, m in enumerate(
-                                            nomes_meses, start=1
-                                        )
+                                        {"label": m.capitalize(), "value": i}
+                                        for i, m in enumerate(nomes_meses, start=1)
                                     ],
                                     value=None,
                                     placeholder="Todos",
                                     clearable=True,
-                                    style=dropdown_style,
+                                    style={
+                                        **dropdown_style,
+                                        "maxHeight": 260,  # mantém o menu contido
+                                    },
                                     optionHeight=35,
+                                    maxHeight=260,
                                 ),
                             ],
                         ),
+
                         # Lista
                         html.Div(
                             style={
@@ -197,11 +185,7 @@ layout = html.Div(
                                     id="filtro_lista_pagamentos",
                                     options=[
                                         {"label": u, "value": u}
-                                        for u in sorted(
-                                            df_base["LISTAS"]
-                                            .dropna()
-                                            .unique()
-                                        )
+                                        for u in sorted(df_base["LISTAS"].dropna().unique())
                                     ],
                                     value=None,
                                     placeholder="Todas",
@@ -211,6 +195,7 @@ layout = html.Div(
                                 ),
                             ],
                         ),
+
                         # Fonte
                         html.Div(
                             style={
@@ -223,16 +208,8 @@ layout = html.Div(
                                 dcc.Dropdown(
                                     id="filtro_fonte_pagamentos",
                                     options=[
-                                        {
-                                            "label": str(u),
-                                            "value": str(u),
-                                        }
-                                        for u in sorted(
-                                            df_base["FONTE"]
-                                                .dropna()
-                                                .astype(str)
-                                                .unique()
-                                        )
+                                        {"label": u, "value": u}
+                                        for u in sorted(df_base["FONTE"].dropna().unique())
                                     ],
                                     value=None,
                                     placeholder="Todas",
@@ -244,6 +221,7 @@ layout = html.Div(
                         ),
                     ],
                 ),
+
                 html.Div(
                     style={"marginTop": "10px"},
                     children=[
@@ -324,16 +302,9 @@ layout = html.Div(
                 "textAlign": "center",
             },
         ),
-        # Interval desativado (mantido como comentário, como no original)
-        # dcc.Interval(
-        #     id="interval-atualizacao",
-        #     interval=5 * 60 * 1000,  # a cada 5 minutos
-        #     n_intervals=0,
-        # ),
         dcc.Store(id="store_dados_pagamentos"),
     ],
 )
-
 
 # ----------------------------------------
 # 5. CALLBACK — Atualização tabela + gráficos
@@ -347,16 +318,9 @@ layout = html.Div(
     Input("filtro_mes_pagamentos", "value"),
     Input("filtro_lista_pagamentos", "value"),
     Input("filtro_fonte_pagamentos", "value"),
-    Input("interval-atualizacao", "n_intervals"),
 )
-def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
+def atualizar_tabela(ano, mes, lista, fonte):
     global df_base
-
-    # Atualiza df_base somente em horário permitido (08h–18h)
-    hora = datetime.now().hour
-    if 8 <= hora < 18:
-        if n_intervals is not None:
-            df_base = carregar_dados()
 
     dff = df_base.copy()
 
@@ -399,6 +363,7 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
         "total_geral": dff["Valor"].sum() if not dff.empty else 0.0,
     }
 
+    # Gráfico por lista
     if not dff.empty:
         grp_lista = dff.groupby("LISTAS", as_index=False)["Valor"].sum()
     else:
@@ -422,6 +387,7 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
         yaxis_tickformat=",.2f",
     )
 
+    # Gráfico por fonte
     if not dff.empty:
         grp_fonte = dff.groupby("FONTE", as_index=False)["Valor"].sum()
     else:
@@ -447,10 +413,8 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
 
     return dff_display.to_dict("records"), dados_pdf, fig_lista, fig_fonte
 
-
 # ----------------------------------------
 # 6. CALLBACK — Limpar filtros
-# (padrão igual ao da página de Passagens)
 # ----------------------------------------
 @dash.callback(
     Output("filtro_ano_pagamentos", "value"),
@@ -463,7 +427,6 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
 def limpar(n):
     return ANO_PADRAO, None, None, None
 
-
 # ----------------------------------------
 # 7. CALLBACK — Geração do PDF
 # ----------------------------------------
@@ -474,10 +437,8 @@ wrap_style = ParagraphStyle(
     spaceAfter=4,
 )
 
-
 def wrap(text):
     return Paragraph(str(text), wrap_style)
-
 
 @dash.callback(
     Output("download_relatorio_pagamentos", "data"),
@@ -575,5 +536,4 @@ def gerar_pdf(n, tabela, dados_pdf):
     buffer.seek(0)
 
     from dash import dcc
-
     return dcc.send_bytes(buffer.getvalue(), "pagamentos_efetivados.pdf")
