@@ -51,9 +51,9 @@ def carregar_dados():
         if isinstance(valor, str):
             v = (
                 valor.replace("R$", "")
-                .replace(".", "")
-                .replace(",", ".")
-                .strip()
+                    .replace(".", "")
+                    .replace(",", ".")
+                    .strip()
             )
             return float(v) if v not in ["", "-"] else 0.0
         return float(valor) if pd.notna(valor) else 0.0
@@ -96,7 +96,6 @@ dropdown_style = {
 # Layout (conteúdo da página)
 # ----------------------------------------
 layout = html.Div(
-    # não definir overflow aqui para evitar segundo scroll
     children=[
         html.H2(
             "Gastos com Viagens",
@@ -111,9 +110,10 @@ layout = html.Div(
                         "display": "flex",
                         "flexWrap": "wrap",
                         "gap": "10px",
-                        "alignItems": "flex-start",  # evita empurrar o resto para baixo
+                        "alignItems": "flex-start",
                     },
                     children=[
+                        # Ano
                         html.Div(
                             style={"minWidth": "140px", "flex": "0 0 160px"},
                             children=[
@@ -128,10 +128,10 @@ layout = html.Div(
                                     clearable=False,
                                     style=dropdown_style,
                                     optionHeight=40,
-                                    maxHeight=300,
                                 ),
                             ],
                         ),
+                        # Mês
                         html.Div(
                             style={"minWidth": "140px", "flex": "0 0 160px"},
                             children=[
@@ -146,11 +146,11 @@ layout = html.Div(
                                     placeholder="Todos",
                                     clearable=True,
                                     style=dropdown_style,
-                                    optionHeight=40,
-                                    maxHeight=300,
+                                    optionHeight=35,
                                 ),
                             ],
                         ),
+                        # Unidade (Viagem)
                         html.Div(
                             style={
                                 "minWidth": "240px",
@@ -168,14 +168,8 @@ layout = html.Div(
                                     value=None,
                                     placeholder="Todas",
                                     clearable=True,
-                                    style={
-                                        **dropdown_style,
-                                        # altura visual do componente fechado:
-                                        "minHeight": "38px",
-                                        "maxHeight": "42px",
-                                    },
+                                    style=dropdown_style,
                                     optionHeight=35,
-                                    maxHeight=250,
                                 ),
                             ],
                         ),
@@ -240,12 +234,11 @@ layout = html.Div(
                 {"name": "Gasto com Seguro Viagem", "id": "Valor Seguro Viagem"},
             ],
             data=[],
-            # scroll só aqui
             style_table={
                 "overflowX": "auto",
                 "overflowY": "auto",
                 "maxHeight": "350px",
-            },  # [web:11]
+            },
             style_cell={"textAlign": "center", "padding": "4px"},
             style_header={
                 "fontWeight": "bold",
@@ -278,7 +271,7 @@ layout = html.Div(
                 "overflowX": "auto",
                 "overflowY": "auto",
                 "maxHeight": "350px",
-            },  # [web:11]
+            },
             style_cell={"textAlign": "center", "padding": "4px"},
             style_header={
                 "fontWeight": "bold",
@@ -534,7 +527,9 @@ def gerar_pdf(n, fig_pizza, fig_barras, resumo, detalhe, dados_pdf):
     cards_vals = dados_pdf["cards"]
 
     def fmt(v):
-        return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."
+
+        )
 
     cards_data = [
         ["Total Viagens", fmt(cards_vals["total_viagem"])],
