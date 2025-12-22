@@ -24,6 +24,7 @@ dash.register_page(
     title="Pagamentos Efetivados",
 )
 
+
 URL = (
     "https://docs.google.com/spreadsheets/d/"
     "1KEEohPamH36URHpPjFjpVmSNOoK3429erayoPv6fcDo/"
@@ -129,8 +130,14 @@ layout = html.Div(
             children=[
                 html.H3("Filtros", className="sidebar-title"),
                 html.Div(
-                    style={"display": "flex", "flexWrap": "wrap", "gap": "10px"},
+                    style={
+                        "display": "flex",
+                        "flexWrap": "wrap",
+                        "gap": "10px",
+                        "alignItems": "flex-start",
+                    },
                     children=[
+                        # Ano
                         html.Div(
                             style={"minWidth": "140px", "flex": "0 0 160px"},
                             children=[
@@ -138,7 +145,10 @@ layout = html.Div(
                                 dcc.Dropdown(
                                     id="filtro_ano_pagamentos",
                                     options=[
-                                        {"label": int(a), "value": int(a)}
+                                        {
+                                            "label": int(a),
+                                            "value": int(a),
+                                        }
                                         for a in sorted(
                                             df_base["Ano"].dropna().unique()
                                         )
@@ -147,10 +157,10 @@ layout = html.Div(
                                     clearable=False,
                                     style=dropdown_style,
                                     optionHeight=40,
-                                    maxHeight=400,
                                 ),
                             ],
                         ),
+                        # Mês
                         html.Div(
                             style={"minWidth": "140px", "flex": "0 0 160px"},
                             children=[
@@ -158,7 +168,10 @@ layout = html.Div(
                                 dcc.Dropdown(
                                     id="filtro_mes_pagamentos",
                                     options=[
-                                        {"label": m.capitalize(), "value": i}
+                                        {
+                                            "label": m.capitalize(),
+                                            "value": i,
+                                        }
                                         for i, m in enumerate(
                                             nomes_meses, start=1
                                         )
@@ -167,13 +180,17 @@ layout = html.Div(
                                     placeholder="Todos",
                                     clearable=True,
                                     style=dropdown_style,
-                                    optionHeight=40,
-                                    maxHeight=400,
+                                    optionHeight=35,
                                 ),
                             ],
                         ),
+                        # Lista
                         html.Div(
-                            style={"minWidth": "220px", "flex": "1"},
+                            style={
+                                "minWidth": "240px",
+                                "flex": "1 1 280px",
+                                "maxWidth": "480px",
+                            },
                             children=[
                                 html.Label("Lista"),
                                 dcc.Dropdown(
@@ -181,36 +198,47 @@ layout = html.Div(
                                     options=[
                                         {"label": u, "value": u}
                                         for u in sorted(
-                                            df_base["LISTAS"].dropna().unique()
+                                            df_base["LISTAS"]
+                                            .dropna()
+                                            .unique()
                                         )
                                     ],
                                     value=None,
                                     placeholder="Todas",
                                     clearable=True,
                                     style=dropdown_style,
-                                    optionHeight=50,
-                                    maxHeight=400,
+                                    optionHeight=35,
                                 ),
                             ],
                         ),
+                        # Fonte
                         html.Div(
-                            style={"minWidth": "160px", "flex": "1"},
+                            style={
+                                "minWidth": "220px",
+                                "flex": "1 1 260px",
+                                "maxWidth": "420px",
+                            },
                             children=[
                                 html.Label("Fonte"),
                                 dcc.Dropdown(
                                     id="filtro_fonte_pagamentos",
                                     options=[
-                                        {"label": str(u), "value": str(u)}
+                                        {
+                                            "label": str(u),
+                                            "value": str(u),
+                                        }
                                         for u in sorted(
-                                            df_base["FONTE"].dropna().unique()
+                                            df_base["FONTE"]
+                                                .dropna()
+                                                .astype(str)
+                                                .unique()
                                         )
                                     ],
                                     value=None,
                                     placeholder="Todas",
                                     clearable=True,
                                     style=dropdown_style,
-                                    optionHeight=50,
-                                    maxHeight=400,
+                                    optionHeight=35,
                                 ),
                             ],
                         ),
@@ -239,9 +267,20 @@ layout = html.Div(
         ),
         html.Div(
             className="charts-row",
+            style={
+                "display": "flex",
+                "flexWrap": "wrap",
+                "gap": "10px",
+            },
             children=[
-                dcc.Graph(id="grafico_lista_pagamentos", style={"width": "50%"}),
-                dcc.Graph(id="grafico_fonte_pagamentos", style={"width": "50%"}),
+                dcc.Graph(
+                    id="grafico_lista_pagamentos",
+                    style={"flex": "1 1 300px", "minWidth": "280px"},
+                ),
+                dcc.Graph(
+                    id="grafico_fonte_pagamentos",
+                    style={"flex": "1 1 300px", "minWidth": "280px"},
+                ),
             ],
         ),
         html.H4("Detalhamento de Pagamentos"),
@@ -261,7 +300,11 @@ layout = html.Div(
                 {"name": "RAZÃO SOCIAL", "id": "RAZÃO SOCIAL"},
             ],
             data=[],
-            style_table={"overflowX": "auto"},
+            style_table={
+                "overflowX": "auto",
+                "overflowY": "auto",
+                "maxHeight": "400px",
+            },
             style_cell={
                 "textAlign": "center",
                 "padding": "8px",
@@ -281,12 +324,12 @@ layout = html.Div(
                 "textAlign": "center",
             },
         ),
-        # Interval para atualização periódica do df_base
-       # dcc.Interval(
-       #     id="interval-atualizacao",
-       #     interval=5 * 60 * 1000,  # a cada 5 minutos
-       #     n_intervals=0,
-       # ),
+        # Interval desativado (mantido como comentário, como no original)
+        # dcc.Interval(
+        #     id="interval-atualizacao",
+        #     interval=5 * 60 * 1000,  # a cada 5 minutos
+        #     n_intervals=0,
+        # ),
         dcc.Store(id="store_dados_pagamentos"),
     ],
 )
@@ -407,6 +450,7 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
 
 # ----------------------------------------
 # 6. CALLBACK — Limpar filtros
+# (padrão igual ao da página de Passagens)
 # ----------------------------------------
 @dash.callback(
     Output("filtro_ano_pagamentos", "value"),
@@ -417,8 +461,7 @@ def atualizar_tabela(ano, mes, lista, fonte, n_intervals):
     prevent_initial_call=True,
 )
 def limpar(n):
-    ano_padrao = ANO_PADRAO
-    return ano_padrao, None, None, None
+    return ANO_PADRAO, None, None, None
 
 
 # ----------------------------------------
@@ -532,4 +575,5 @@ def gerar_pdf(n, tabela, dados_pdf):
     buffer.seek(0)
 
     from dash import dcc
+
     return dcc.send_bytes(buffer.getvalue(), "pagamentos_efetivados.pdf")
