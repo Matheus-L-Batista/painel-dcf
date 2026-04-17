@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.zip
+Painel_DCC.zip
+.env
+.DS_Store
