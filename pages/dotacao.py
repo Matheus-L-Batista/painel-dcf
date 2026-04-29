@@ -282,11 +282,6 @@ layout = html.Div(
                 {"if": {"column_id": "DESTAQUE RECEBIDO"}, "textAlign": "right"},
             ],
         )),
-        dcc.Interval(
-            id="interval-atualizacao",
-            interval=5 * 60 * 1000,
-            n_intervals=0,
-        ),
         dcc.Store(id="store_pdf_dotacao"),
     ],
 )

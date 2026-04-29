@@ -45,9 +45,48 @@ URL = (
 # --------------------------------------------------
 # Carga e tratamento dos dados
 # --------------------------------------------------
+COLUNAS_PASSAGENS = [
+    "Data Início da Viagem",
+    "Valor das Diárias",
+    "Valor da Viagem",
+    "Valor da Passagem",
+    "Valor Seguro Viagem",
+    "Valor Restituição",
+    "Custo com emissão de passagens dentro do prazo",
+    "Custo com emissão de passagens em caráter de urgência",
+    "Unidade (Viagem)",
+    "Número da PCDP",
+    "Ano",
+    "Mes",
+]
+
+
+def _df_vazio_passagens():
+    df = pd.DataFrame(columns=COLUNAS_PASSAGENS)
+    df["Data Início da Viagem"] = pd.to_datetime(df["Data Início da Viagem"], errors="coerce")
+    for col in [
+        "Valor das Diárias",
+        "Valor da Viagem",
+        "Valor da Passagem",
+        "Valor Seguro Viagem",
+        "Valor Restituição",
+        "Custo com emissão de passagens dentro do prazo",
+        "Custo com emissão de passagens em caráter de urgência",
+        "Ano",
+        "Mes",
+    ]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
 def carregar_dados():
     df = pd.read_csv(URL)
     df.columns = [c.strip() for c in df.columns]
+
+    colunas_obrigatorias = [c for c in COLUNAS_PASSAGENS if c not in ["Ano", "Mes"]]
+    faltantes = [c for c in colunas_obrigatorias if c not in df.columns]
+    if faltantes:
+        raise ValueError("Colunas ausentes na planilha de passagens: " + ", ".join(faltantes))
 
     df["Data Início da Viagem"] = pd.to_datetime(
         df["Data Início da Viagem"], format="%d/%m/%Y", errors="coerce"
@@ -71,8 +110,25 @@ def carregar_dados():
 
     return df
 
-# 🔧 Base inicial
-df_base = carregar_dados()
+
+_ULTIMO_ERRO_CARGA = None
+
+
+def carregar_dados_seguro(df_atual=None):
+    global _ULTIMO_ERRO_CARGA
+    try:
+        df = carregar_dados()
+        _ULTIMO_ERRO_CARGA = None
+        return df
+    except Exception as exc:
+        _ULTIMO_ERRO_CARGA = str(exc)
+        if df_atual is not None and not df_atual.empty:
+            return df_atual
+        return _df_vazio_passagens()
+
+
+# Base inicial: não deixa falha externa de rede/planilha derrubar o app.
+df_base = carregar_dados_seguro()
 try:
     ANO_PADRAO = int(sorted(df_base["Ano"].dropna().unique())[-1])
 except Exception:
@@ -92,7 +148,7 @@ def _maybe_reload_df(n_intervals):
     # recarrega apenas em horário comercial (Brasília)
     hora = now_sp().hour
     if 8 <= hora < 18:
-        df_base = carregar_dados()
+        df_base = carregar_dados_seguro(df_base)
 
 nomes_meses = [
     "janeiro",
@@ -124,6 +180,7 @@ dropdown_style = {
 layout = html.Div(
     style={"padding": "10px 22px"},
     children=[
+        dcc.Location(id="url-passagens"),
         # ===== Barra de filtros FIXA no topo =====
         html.Div(
             id="barra-filtros-passagens",
@@ -335,7 +392,7 @@ layout = html.Div(
     Output("filtro_unidade_passagens", "options"),
     Input("filtro_ano_passagens", "value"),
     Input("filtro_mes_passagens", "value"),
-    Input("url", "pathname"),
+    Input("url-passagens", "pathname"),
     Input("btn_reload_passagens", "n_clicks"),
 )
 def atualizar_opcoes_unidade(ano, mes, pathname, n_reload):
@@ -344,8 +401,8 @@ def atualizar_opcoes_unidade(ano, mes, pathname, n_reload):
     if pathname != "/passagens-dcf":
         raise PreventUpdate
 
-    if getattr(dash.ctx, "triggered_id", None) == "btn_reload_passagens":
-        df_base = carregar_dados()
+    if getattr(dash.ctx, "triggered_id", None) in ("btn_reload_passagens", "url-passagens"):
+        df_base = carregar_dados_seguro(df_base)
 
     dff = df_base.copy()
 
@@ -370,7 +427,7 @@ def atualizar_opcoes_unidade(ano, mes, pathname, n_reload):
     Input("filtro_ano_passagens", "value"),
     Input("filtro_mes_passagens", "value"),
     Input("filtro_unidade_passagens", "value"),
-    Input("url", "pathname"),
+    Input("url-passagens", "pathname"),
     Input("btn_reload_passagens", "n_clicks"),
     Input("interval-atualizacao", "n_intervals"),
 )
@@ -380,8 +437,8 @@ def atualizar_pagina(ano, mes, unidade, pathname, n_reload, n_intervals):
     if pathname != "/passagens-dcf":
         raise PreventUpdate
 
-    if getattr(dash.ctx, "triggered_id", None) == "btn_reload_passagens":
-        df_base = carregar_dados()
+    if getattr(dash.ctx, "triggered_id", None) in ("btn_reload_passagens", "url-passagens"):
+        df_base = carregar_dados_seguro(df_base)
     else:
         _maybe_reload_df(n_intervals)
 
@@ -599,7 +656,7 @@ def atualizar_pagina(ano, mes, unidade, pathname, n_reload, n_intervals):
     Input("filtro_ano_passagens", "value"),
     Input("filtro_mes_passagens", "value"),
     Input("filtro_unidade_passagens", "value"),
-    Input("url", "pathname"),
+    Input("url-passagens", "pathname"),
     Input("btn_reload_passagens", "n_clicks"),
     Input("interval-atualizacao", "n_intervals"),
 )
@@ -609,8 +666,8 @@ def atualizar_detalhe(ano, mes, unidade, pathname, n_reload, n_intervals):
     if pathname != "/passagens-dcf":
         raise PreventUpdate
 
-    if getattr(dash.ctx, "triggered_id", None) == "btn_reload_passagens":
-        df_base = carregar_dados()
+    if getattr(dash.ctx, "triggered_id", None) in ("btn_reload_passagens", "url-passagens"):
+        df_base = carregar_dados_seguro(df_base)
     else:
         _maybe_reload_df(n_intervals)
 

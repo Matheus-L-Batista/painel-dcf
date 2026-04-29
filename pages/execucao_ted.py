@@ -573,13 +573,6 @@ layout = html.Div(
             ],
         ),
 
-        # Mantém Interval (só para disparar atualização periódica, respeitando a regra de horário)
-        dcc.Interval(
-            id="interval-atualizacao",
-            interval=5 * 60 * 1000,
-            n_intervals=0,
-        ),
-
         dcc.Store(id="store_reload_ted"),
         dcc.Store(id="store_pdf_ted"),
     ],

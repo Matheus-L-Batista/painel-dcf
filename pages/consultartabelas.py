@@ -34,10 +34,17 @@ def carregar_dados_portarias():
     return df
 
 
+def carregar_dados_portarias_seguro():
+    try:
+        return carregar_dados_portarias()
+    except Exception:
+        return pd.DataFrame()
+
+
 # --------------------------------------------------
 # Carrega os dados
 # --------------------------------------------------
-df_portarias_base = carregar_dados_portarias()
+df_portarias_base = carregar_dados_portarias_seguro()
 
 # DataFrame auxiliar com índice e nome da coluna
 df_cols = pd.DataFrame(
