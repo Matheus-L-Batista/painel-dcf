@@ -410,7 +410,7 @@ layout = html.Div(
         html.H4("Detalhamento", style={"marginTop": "8px"}),
 
         html.Div(
-            style={"width": "100%", "overflowX": "auto", "border": f"1px solid {CINZA}", "borderRadius": "10px", "paddingBottom": "8px"},
+            style={"width": "100%", "overflowX": "hidden", "border": f"1px solid {CINZA}", "borderRadius": "10px", "paddingBottom": "8px"},
             children=[
                 dash_table.DataTable(
                     id="tabela-unifei",
@@ -432,8 +432,8 @@ layout = html.Div(
 
                     fill_width=False,
                     style_table={
-                        "minWidth": "max-content",
-                        "overflowX": "auto",
+                        "width": "100%",
+                        "overflowX": "hidden",
                         "maxHeight": "520px",   # ✅ necessário p/ header fixo funcionar com scroll
                         "overflowY": "auto",
                     },
@@ -441,15 +441,15 @@ layout = html.Div(
                         "backgroundColor": AZUL,
                         "color": "white",
                         "fontWeight": "bold",
-                        "fontSize": "12px",
+                        "fontSize": "11px",
                         "textAlign": "left",
                         "whiteSpace": "normal",
                         "height": "auto",
-                        "padding": "8px",
+                        "padding": "6px",
                     },
                     style_cell={
-                        "fontSize": "12px",
-                        "padding": "8px",
+                        "fontSize": "11px",
+                        "padding": "6px",
                         "whiteSpace": "normal",
                         "height": "auto",
                         "textAlign": "left",
@@ -457,6 +457,8 @@ layout = html.Div(
                         "lineHeight": "1.25",
                         "backgroundColor": "white",
                         "color": "#111",
+                        "overflow": "hidden",
+                        "textOverflow": "clip",
                     },
 
                     # ✅ remove cores por coluna; aplica zebra branco/laranja
@@ -465,18 +467,20 @@ layout = html.Div(
                     ],
 
                     style_cell_conditional=[
-                        {"if": {"column_id": "UG Executora"}, "minWidth": "210px", "width": "210px"},
-                        {"if": {"column_id": "Mês"}, "minWidth": "90px", "width": "90px"},
-                        {"if": {"column_id": "Fonte Recursos Detalhada"}, "minWidth": "190px", "width": "190px"},
-                        {"if": {"column_id": "Grupo Despesa"}, "minWidth": "190px", "width": "190px"},
-                        {"if": {"column_id": "DESPESAS INSCRITAS EM RP NAO PROCESSADOS"}, "minWidth": "230px", "width": "230px", "textAlign": "right"},
-                        {"if": {"column_id": "DESPESAS EMPENHADAS (CONTROLE EMPENHO)"}, "minWidth": "160px", "width": "160px", "textAlign": "right"},
-                        {"if": {"column_id": "DESPESAS LIQUIDADAS (CONTROLE EMPENHO)"}, "minWidth": "160px", "width": "160px", "textAlign": "right"},
-                        {"if": {"column_id": "DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)"}, "minWidth": "175px", "width": "175px", "textAlign": "right"},
-                        {"if": {"column_id": "DESPESAS PAGAS (CONTROLE EMPENHO)"}, "minWidth": "160px", "width": "160px", "textAlign": "right"},
+                        {"if": {"column_id": "UG Executora"}, "minWidth": "170px", "width": "170px", "maxWidth": "170px"},
+                        {"if": {"column_id": "Mês"}, "minWidth": "70px", "width": "70px", "maxWidth": "70px"},
+                        {"if": {"column_id": "Fonte Recursos Detalhada"}, "minWidth": "190px", "width": "190px", "maxWidth": "190px"},
+                        {"if": {"column_id": "Grupo Despesa"}, "minWidth": "170px", "width": "170px", "maxWidth": "170px"},
+                        {"if": {"column_id": "DESPESAS INSCRITAS EM RP NAO PROCESSADOS"}, "minWidth": "185px", "width": "185px", "maxWidth": "185px", "textAlign": "right"},
+                        {"if": {"column_id": "DESPESAS EMPENHADAS (CONTROLE EMPENHO)"}, "minWidth": "150px", "width": "150px", "maxWidth": "150px", "textAlign": "right"},
+                        {"if": {"column_id": "DESPESAS LIQUIDADAS (CONTROLE EMPENHO)"}, "minWidth": "150px", "width": "150px", "maxWidth": "150px", "textAlign": "right"},
+                        {"if": {"column_id": "DESPESAS LIQUIDADAS A PAGAR(CONTROLE EMPENHO)"}, "minWidth": "165px", "width": "165px", "maxWidth": "165px", "textAlign": "right"},
+                        {"if": {"column_id": "DESPESAS PAGAS (CONTROLE EMPENHO)"}, "minWidth": "150px", "width": "150px", "maxWidth": "150px", "textAlign": "right"},
                     ],
 
                     css=[
+                        {"selector": ".dash-spreadsheet-container th", "rule": "white-space: normal !important; height: auto !important; overflow-wrap: anywhere;"},
+                        {"selector": ".dash-spreadsheet-container td", "rule": "white-space: normal !important; height: auto !important; overflow-wrap: anywhere;"},
                         {"selector": ".dash-cell.focused", "rule": "outline: none !important;"},
                         {"selector": "td.dash-cell", "rule": "cursor: default;"},
                     ],

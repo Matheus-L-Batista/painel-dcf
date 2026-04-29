@@ -380,59 +380,71 @@ def atualizar_painel(grupo, ano, unidade, fonte, n_reload, n_intervals):
     ]
     dff_display = dff_display[colunas]
 
-    # Pizza – Dotação por Grupo
+    # Colunas - Dotação por Grupo
     if not dff.empty:
         grp_dot_grupo = dff.groupby(
             "GRUPO DA DESPESA", as_index=False
         )["DOTACAO ATUALIZADA_VAL"].sum()
-        fig_pizza_dot = px.pie(
+        fig_pizza_dot = px.bar(
             grp_dot_grupo,
-            names="GRUPO DA DESPESA",
-            values="DOTACAO ATUALIZADA_VAL",
+            x="GRUPO DA DESPESA",
+            y="DOTACAO ATUALIZADA_VAL",
+            color="GRUPO DA DESPESA",
+            color_discrete_sequence=["#003A70", "#DA291C", "#A2AAAD"],
+            text="DOTACAO ATUALIZADA_VAL",
             title="Dotação Atualizada por Grupo de Despesa",
         )
         fig_pizza_dot.update_traces(
-            texttemplate="%{label}<br>R$ %{value:,.2f}",
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-            marker=dict(colors=["#003A70", "#DA291C", "#A2AAAD"]),
+            texttemplate="R$ %{y:,.2f}",
+            textposition="outside",
+            cliponaxis=False,
+            hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>",
         )
         fig_pizza_dot.update_layout(
             **_common_graph_layout(),
-            legend_title="Grupo da Despesa",
-            legend_orientation="h",
-            legend_y=-0.1,
+            xaxis_title="Grupo da Despesa",
+            yaxis_title="Dotação Atualizada (R$)",
+            yaxis_tickprefix="R$ ",
+            yaxis_tickformat=",.2f",
+            showlegend=False,
             title_y=0.95,
         )
     else:
-        fig_pizza_dot = px.pie(
+        fig_pizza_dot = px.bar(
             title="Sem dados para os filtros selecionados"
         )
 
-    # Pizza – Destaques por Grupo
+    # Colunas - Destaques por Grupo
     if not dff.empty:
         grp_des_grupo = dff.groupby(
             "GRUPO DA DESPESA", as_index=False
         )["DESTAQUE RECEBIDO_VAL"].sum()
-        fig_pizza_des = px.pie(
+        fig_pizza_des = px.bar(
             grp_des_grupo,
-            names="GRUPO DA DESPESA",
-            values="DESTAQUE RECEBIDO_VAL",
+            x="GRUPO DA DESPESA",
+            y="DESTAQUE RECEBIDO_VAL",
+            color="GRUPO DA DESPESA",
+            color_discrete_sequence=["#003A70", "#DA291C", "#A2AAAD"],
+            text="DESTAQUE RECEBIDO_VAL",
             title="Destaques Recebidos por Grupo de Despesa",
         )
         fig_pizza_des.update_traces(
-            texttemplate="%{label}<br>R$ %{value:,.2f}",
-            hovertemplate="%{label}<br>R$ %{value:,.2f}<extra></extra>",
-            marker=dict(colors=["#003A70", "#DA291C", "#A2AAAD"]),
+            texttemplate="R$ %{y:,.2f}",
+            textposition="outside",
+            cliponaxis=False,
+            hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>",
         )
         fig_pizza_des.update_layout(
             **_common_graph_layout(),
-            legend_title="Grupo da Despesa",
-            legend_orientation="h",
-            legend_y=-0.1,
+            xaxis_title="Grupo da Despesa",
+            yaxis_title="Destaques Recebidos (R$)",
+            yaxis_tickprefix="R$ ",
+            yaxis_tickformat=",.2f",
+            showlegend=False,
             title_y=0.95,
         )
     else:
-        fig_pizza_des = px.pie(
+        fig_pizza_des = px.bar(
             title="Sem dados para os filtros selecionados"
         )
 
