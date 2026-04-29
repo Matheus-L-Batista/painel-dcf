@@ -127,6 +127,15 @@ def carregar_dados_seguro(df_atual=None):
         return _df_vazio_passagens()
 
 
+def opcoes_anos_passagens(df):
+    anos = set()
+    if df is not None and "Ano" in df.columns:
+        anos.update(int(a) for a in df["Ano"].dropna().unique())
+    anos.add(get_default_year())
+    anos.add(now_sp().year)
+    return [{"label": int(a), "value": int(a)} for a in sorted(anos)]
+
+
 # Base inicial: não deixa falha externa de rede/planilha derrubar o app.
 df_base = carregar_dados_seguro()
 try:
@@ -202,10 +211,7 @@ layout = html.Div(
                                 html.Label("Ano"),
                                 dcc.Dropdown(
                                     id="filtro_ano_passagens",
-                                    options=[
-                                        {"label": int(a), "value": int(a)}
-                                        for a in sorted(df_base["Ano"].dropna().unique())
-                                    ],
+                                    options=opcoes_anos_passagens(df_base),
                                     value=ANO_PADRAO,
                                     clearable=False,
                                     style=dropdown_style,
@@ -389,6 +395,7 @@ layout = html.Div(
 # CALLBACK 1 — Atualizar opções do filtro de Unidade (CASCATA)
 # ----------------------------------------
 @dash.callback(
+    Output("filtro_ano_passagens", "options"),
     Output("filtro_unidade_passagens", "options"),
     Input("filtro_ano_passagens", "value"),
     Input("filtro_mes_passagens", "value"),
@@ -405,6 +412,7 @@ def atualizar_opcoes_unidade(ano, mes, pathname, n_reload):
         df_base = carregar_dados_seguro(df_base)
 
     dff = df_base.copy()
+    opcoes_ano = opcoes_anos_passagens(df_base)
 
     if ano:
         dff = dff[dff["Ano"] == ano]
@@ -413,7 +421,7 @@ def atualizar_opcoes_unidade(ano, mes, pathname, n_reload):
 
     unidades = sorted(dff["Unidade (Viagem)"].dropna().unique())
     opcoes = [{"label": u, "value": u} for u in unidades]
-    return opcoes
+    return opcoes_ano, opcoes
 
 # ----------------------------------------
 # CALLBACK 2 — Atualização geral (cards + gráficos + resumo)
