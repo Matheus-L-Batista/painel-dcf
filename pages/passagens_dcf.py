@@ -19,6 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.lib import colors
 import os
+import unicodedata
 from utils.formatting import format_brl, parse_brl_value
 from utils.runtime import format_datetime_sp, get_default_year, now_sp
 from utils.ui import BUTTON_CLEAR_STYLE, BUTTON_PDF_STYLE, BUTTON_REFRESH_STYLE
@@ -158,6 +159,14 @@ def _maybe_reload_df(n_intervals):
     hora = now_sp().hour
     if 8 <= hora < 18:
         df_base = carregar_dados_seguro(df_base)
+
+
+def _normalizar_texto(v):
+    if pd.isna(v):
+        return ""
+    s = str(v).strip().upper()
+    s = unicodedata.normalize("NFKD", s)
+    return "".join(ch for ch in s if not unicodedata.combining(ch))
 
 nomes_meses = [
     "janeiro",
@@ -457,7 +466,10 @@ def atualizar_pagina(ano, mes, unidade, pathname, n_reload, n_intervals):
     if mes:
         dff = dff[dff["Mes"] == mes]
     if unidade:
-        dff = dff[dff["Unidade (Viagem)"] == unidade]
+        alvo = _normalizar_texto(unidade)
+        mask_unidade = dff["Unidade (Viagem)"].apply(_normalizar_texto) == alvo
+        if mask_unidade.any():
+            dff = dff[mask_unidade]
 
     total_viagem = dff["Valor da Viagem"].sum()
     total_prazo = dff["Custo com emissão de passagens dentro do prazo"].sum()
@@ -604,30 +616,43 @@ def atualizar_pagina(ano, mes, unidade, pathname, n_reload, n_intervals):
             )
         )
 
+    col_numero_pcdp = "Número da PCDP"
+    col_data_inicio = "Data Início da Viagem"
+    col_custo_prazo = "Custo com emissão de passagens dentro do prazo"
+    col_custo_urg = "Custo com emissão de passagens em caráter de urgência"
+    col_urgencia = "Urgência"
+
     detalhe = dff[
         [
             "Unidade (Viagem)",
-            "Número da PCDP",
-            "Data Início da Viagem",
-            "Custo com emissão de passagens dentro do prazo",
-            "Custo com emissão de passagens em caráter de urgência",
+            col_numero_pcdp,
+            col_data_inicio,
+            "Valor da Viagem",
+            col_custo_prazo,
+            col_custo_urg,
         ]
     ].copy()
 
     if not detalhe.empty:
-        detalhe["Data Início da Viagem"] = detalhe["Data Início da Viagem"].dt.strftime("%d/%m/%Y")
-        detalhe = detalhe.merge(resumo, on="Unidade (Viagem)", how="left")
+        detalhe[col_data_inicio] = detalhe[col_data_inicio].dt.strftime("%d/%m/%Y")
+        detalhe = detalhe.rename(
+            columns={
+                "Valor da Viagem": "Valor Total",
+                col_custo_prazo: "Dentro do Prazo",
+                col_custo_urg: col_urgencia,
+            }
+        )
         detalhe["Valor Total"] = detalhe["Valor Total"].apply(f)
         detalhe["Dentro do Prazo"] = detalhe["Dentro do Prazo"].apply(f)
-        detalhe["Urgência"] = detalhe["Urgência"].apply(f)
+        detalhe[col_urgencia] = detalhe[col_urgencia].apply(f)
         detalhe = detalhe[
             [
                 "Unidade (Viagem)",
                 "Valor Total",
                 "Dentro do Prazo",
-                "Urgência",
-                "Número da PCDP",
-                "Data Início da Viagem",
+                col_urgencia,
+                col_numero_pcdp,
+                col_data_inicio,
             ]
         ]
     else:
@@ -686,7 +711,10 @@ def atualizar_detalhe(ano, mes, unidade, pathname, n_reload, n_intervals):
     if mes:
         dff = dff[dff["Mes"] == mes]
     if unidade:
-        dff = dff[dff["Unidade (Viagem)"] == unidade]
+        alvo = _normalizar_texto(unidade)
+        mask_unidade = dff["Unidade (Viagem)"].apply(_normalizar_texto) == alvo
+        if mask_unidade.any():
+            dff = dff[mask_unidade]
 
     dff = dff[
         [
